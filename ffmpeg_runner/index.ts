@@ -1,7 +1,8 @@
 import { CmdConverter } from "./core/cmdConverter";
 import { PathTranslator } from "./core/pathTranslator";
-import { CmdRunner } from "./infra/cmd_runner";
+import { FFmpegCommandRunner } from "./infra/ffmpeg-command-runner";
 import { config } from "./infra/config";
+import { RunnerService } from "./services/runner-service";
 
 async function main() {
   const translator = new PathTranslator({
@@ -10,7 +11,10 @@ async function main() {
   });
   const converter = new CmdConverter(translator);
 
-  const runner = new CmdRunner(converter);
+  const cmdRunner = new FFmpegCommandRunner(converter);
+  const runner = new RunnerService(cmdRunner);
+
+  // simulating run
   const result = await runner.run({
     cmd: config.sampleCmd,
     debug: false,

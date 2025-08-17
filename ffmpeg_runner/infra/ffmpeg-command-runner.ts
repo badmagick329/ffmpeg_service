@@ -1,6 +1,7 @@
 import type { ICmdConverter } from "../core/iCmdCoverter";
+import type { IFFmpegCommandRunner } from "../services/iffmpeg-command-runner";
 
-export class CmdRunner {
+export class FFmpegCommandRunner implements IFFmpegCommandRunner {
   constructor(private readonly cmdConverter: ICmdConverter) {}
 
   /**
@@ -10,9 +11,9 @@ export class CmdRunner {
    * @return An object containing the exit code, stderr, and stdout of the command execution.
    */
   async run({ cmd, debug = false }: { cmd: string; debug: boolean }): Promise<{
-    exitCode: number;
     stderr: string;
     stdout: string;
+    exitCode: number;
   }> {
     const arrayCmd = this.cmdConverter.cmdToArray(cmd);
     if (debug) {
@@ -30,9 +31,9 @@ export class CmdRunner {
       stdout: "pipe",
     });
     return {
-      exitCode: await proc.exited,
       stderr: await new Response(proc.stderr).text(),
       stdout: await new Response(proc.stdout).text(),
+      exitCode: await proc.exited,
     };
   }
 }
