@@ -1,5 +1,5 @@
-import type { ICmdConverter } from "./iCmdCoverter";
-import type { IPathTranslator } from "./iPathTranslator";
+import type { ICmdConverter } from "./icmd-converter";
+import type { IPathTranslator } from "./ipath-translator";
 
 export class CmdConverter implements ICmdConverter {
   private static cmdRegex =

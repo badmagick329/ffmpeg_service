@@ -1,4 +1,4 @@
-import type { IPathTranslator } from "./iPathTranslator";
+import type { IPathTranslator } from "./ipath-translator";
 
 export class PathTranslator implements IPathTranslator {
   private readonly src: string;

@@ -1,4 +1,4 @@
-import type { ICmdConverter } from "../core/iCmdCoverter";
+import type { ICmdConverter } from "../core/icmd-converter";
 import type { IFFmpegCommandRunner } from "../services/iffmpeg-command-runner";
 
 export class FFmpegCommandRunner implements IFFmpegCommandRunner {

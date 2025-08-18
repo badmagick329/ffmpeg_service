@@ -1,5 +1,5 @@
-import { CmdConverter } from "./core/cmdConverter";
-import { PathTranslator } from "./core/pathTranslator";
+import { CmdConverter } from "./core/cmd-converter";
+import { PathTranslator } from "./core/path-translator";
 import { FFmpegCommandRunner } from "./infra/ffmpeg-command-runner";
 import { config } from "./infra/config";
 import { RunnerService } from "./services/runner-service";
