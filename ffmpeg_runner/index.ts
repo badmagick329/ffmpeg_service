@@ -4,10 +4,26 @@ import { FFmpegCommandRunner } from "./infra/ffmpeg-command-runner";
 import { config } from "./infra/config";
 import { RunnerService } from "./services/runner-service";
 import { InputFilesRepository } from "./infra/repositories/input-files-repository";
+import { FsWatcherBuilder } from "./infra/fs-watcher-builder";
+import { InputWatchService } from "./services/input-watch-service";
+import type { MakeWatcher } from "./core/ifs-watcher";
 
 async function main() {
   // testRunner();
-  testInputChecker();
+  // testInputChecker();
+  testWatcher();
+}
+
+function testWatcher() {
+  const makeWatcher: MakeWatcher = (onChange) =>
+    FsWatcherBuilder.start()
+      .watchPath("../data/incoming")
+      .onChange(onChange)
+      .build();
+
+  const inputRepo = new InputFilesRepository();
+  const watchService = new InputWatchService(inputRepo, makeWatcher);
+  watchService.start();
 }
 
 async function testInputChecker() {
