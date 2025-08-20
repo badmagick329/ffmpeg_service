@@ -12,26 +12,26 @@ _db.exec(`
 PRAGMA journal_mode=WAL;
 PRAGMA synchronous=NORMAL;
 CREATE TABLE IF NOT EXISTS jobs (
-  id           INTEGER PRIMARY KEY,
-  raw_cmd      TEXT NOT NULL,
-  normalized   TEXT NOT NULL,
-  filepath     TEXT NOT NULL,
-  cmd_hash     TEXT NOT NULL UNIQUE,
-  status       TEXT NOT NULL CHECK(status IN ('missing_input','pending','running','succeeded','failed')),
-  attempts     INTEGER NOT NULL DEFAULT 0,
-  last_error   TEXT,
-  locked_by    TEXT,
-  lease_until  INTEGER,
-  created_at   INTEGER NOT NULL DEFAULT (unixepoch()),
-  updated_at   INTEGER NOT NULL DEFAULT (unixepoch())
+  id              INTEGER PRIMARY KEY,
+  raw_cmd         TEXT NOT NULL,
+  localized_cmd   TEXT NOT NULL,
+  filepath        TEXT NOT NULL,
+  cmd_hash        TEXT NOT NULL UNIQUE,
+  status          TEXT NOT NULL CHECK(status IN ('missing_input','pending','running','succeeded','failed')),
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  last_error      TEXT,
+  locked_by       TEXT,
+  lease_until     INTEGER,
+  created_at      INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at      INTEGER NOT NULL DEFAULT (unixepoch())
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_lease  ON jobs(lease_until);
 CREATE INDEX IF NOT EXISTS idx_jobs_filepath ON jobs(filepath);
 CREATE TABLE IF NOT EXISTS input_files (
-  id           INTEGER PRIMARY KEY,
-  filepath     TEXT NOT NULL UNIQUE,
-  created_at   INTEGER NOT NULL DEFAULT (unixepoch())
+  id              INTEGER PRIMARY KEY,
+  filepath        TEXT NOT NULL UNIQUE,
+  created_at      INTEGER NOT NULL DEFAULT (unixepoch())
 );
 CREATE INDEX IF NOT EXISTS idx_input_files_filepath  ON input_files(filepath);
 `);
@@ -48,8 +48,8 @@ const inpGetByFilepath = _db.query(
 );
 
 const qEnq = _db.query(
-  `INSERT OR IGNORE INTO jobs(raw_cmd, normalized, filepath, cmd_hash, status)
-  VALUES($raw_cmd, $normalized, $filepath, $cmd_hash, $status)`
+  `INSERT OR IGNORE INTO jobs(raw_cmd, localized_cmd, filepath, cmd_hash, status)
+  VALUES($raw_cmd, $localized_cmd, $filepath, $cmd_hash, $status)`
 );
 
 const qStatusUpdate = _db.query(
@@ -73,7 +73,7 @@ const qClaim = _db.query(
   ORDER BY created_at
   LIMIT 1
   )
-  RETURNING id, normalized`
+  RETURNING id, localized_cmd`
 );
 
 const qOk = _db.query(

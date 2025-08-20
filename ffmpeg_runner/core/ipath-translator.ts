@@ -1,3 +1,3 @@
 export interface IPathTranslator {
-  transformFFmpegPath(filePath: string, isInput: boolean): string;
+  localize(filePath: string, isInput: boolean): string;
 }

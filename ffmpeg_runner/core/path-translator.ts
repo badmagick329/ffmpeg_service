@@ -13,7 +13,7 @@ export class PathTranslator implements IPathTranslator {
     this.dst = dst;
   }
 
-  transformFFmpegPath(filePath: string, isInput: boolean = true): string {
+  localize(filePath: string, isInput: boolean = true): string {
     if (filePath.includes("\\")) {
       if (filePath.includes("/")) {
         throw new Error(

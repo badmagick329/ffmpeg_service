@@ -1,4 +1,4 @@
-import { CmdConverter } from "./core/cmd-converter";
+import { CmdTranslater } from "./core/cmd-translator";
 import { PathTranslator } from "./core/path-translator";
 import { FFmpegCommandRunner } from "./infra/ffmpeg-command-runner";
 import { config } from "./infra/config";
@@ -7,11 +7,20 @@ import { InputFilesRepository } from "./infra/repositories/input-files-repositor
 import { FsWatcherBuilder } from "./infra/fs-watcher-builder";
 import { InputWatchService } from "./services/input-watch-service";
 import type { MakeWatcher } from "./core/ifs-watcher";
+import { JobCreationService } from "./services/job-creation-service";
 
 async function main() {
-  // testRunner();
+  testRunner();
   // testInputChecker();
-  testWatcher();
+  // testWatcher();
+}
+function testJobCreationService() {
+  const pathTranslator = new PathTranslator({
+    src: config.src,
+    dst: config.dst,
+  });
+  const cmdTranslater = new CmdTranslater(pathTranslator);
+  const jobCreationService = new JobCreationService(cmdTranslater);
 }
 
 function testWatcher() {
@@ -39,15 +48,16 @@ async function testRunner() {
     src: config.src,
     dst: config.dst,
   });
-  const converter = new CmdConverter(translator);
+  const cmdTranslator = new CmdTranslater(translator);
+  console.log(cmdTranslator.localizeCmd(config.sampleCmd));
 
-  const cmdRunner = new FFmpegCommandRunner(converter);
-  const runner = new RunnerService(cmdRunner);
+  const cmdRunner = new FFmpegCommandRunner(cmdTranslator);
+  const runner = new RunnerService(cmdRunner, cmdTranslator);
 
   // simulating run
   const result = await runner.run({
     cmd: config.sampleCmd,
-    debug: false,
+    debug: true,
   });
   console.log("Command executed with result:", result);
 }

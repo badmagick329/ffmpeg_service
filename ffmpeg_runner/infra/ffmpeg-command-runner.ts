@@ -1,8 +1,8 @@
-import type { ICmdConverter } from "../core/icmd-converter";
+import type { ICmdTranslator } from "../core/icmd-translator";
 import type { IFFmpegCommandRunner } from "../services/iffmpeg-command-runner";
 
 export class FFmpegCommandRunner implements IFFmpegCommandRunner {
-  constructor(private readonly cmdConverter: ICmdConverter) {}
+  constructor(readonly cmdTranslater: ICmdTranslator) {}
 
   /**
    * @param cmd - The command to run, e.g. 'ffmpeg -y -i "./input.mkv" -c:v libx264 -crf 24 -preset slow -c:a copy -vf bwdif=mode=1:parity=auto:deint=1 -ss 00:00:05.380 -to 00:00:13.054 "./output.mkv"'
@@ -15,7 +15,7 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
     stdout: string;
     exitCode: number;
   }> {
-    const arrayCmd = this.cmdConverter.cmdToArray(cmd);
+    const arrayCmd = this.cmdTranslater.cmdToArray(cmd);
     if (debug) {
       console.log("Running command in debug:", arrayCmd);
       return {
