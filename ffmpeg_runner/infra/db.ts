@@ -1,6 +1,10 @@
 import { Database } from "bun:sqlite";
+import { JOB_STATUS } from "../core/job";
 
 const _db = new Database("ffmpeg_service.db");
+const statusValues = Object.values(JOB_STATUS)
+  .map((s) => `'${s}'`)
+  .join(",");
 
 _db.exec(`
 PRAGMA journal_mode=WAL;
@@ -10,7 +14,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   raw_cmd         TEXT NOT NULL,
   localized_cmd   TEXT NOT NULL,
   input_file      TEXT NOT NULL,
-  status          TEXT NOT NULL CHECK(status IN ('missing_input','pending','running','succeeded','failed')),
+  status          TEXT NOT NULL CHECK(status IN (${statusValues})),
   attempts        INTEGER NOT NULL DEFAULT 0,
   last_error      TEXT,
   locked_by       TEXT,
@@ -20,38 +24,43 @@ CREATE TABLE IF NOT EXISTS jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_lease  ON jobs(lease_until);
-CREATE INDEX IF NOT EXISTS idx_jobs_filepath ON jobs(input_file);
+CREATE INDEX IF NOT EXISTS idx_jobs_input_files ON jobs(input_file);
 CREATE TABLE IF NOT EXISTS input_files (
   id              INTEGER PRIMARY KEY,
   input_file      TEXT NOT NULL UNIQUE,
   created_at      INTEGER NOT NULL DEFAULT (unixepoch())
 );
-CREATE INDEX IF NOT EXISTS idx_input_files_filepath  ON input_files(input_file);
+CREATE INDEX IF NOT EXISTS idx_input_files_input_files  ON input_files(input_file);
 `);
 
 const inpAdd = _db.query(
   `INSERT OR IGNORE INTO input_files(input_file)
-  VALUES($filepath) RETURNING id,input_file`
+  VALUES($input_file) RETURNING id,input_file`
 );
 
 const inpRemove = _db.query(
-  `DELETE FROM input_files WHERE input_file=$filepath`
+  `DELETE FROM input_files WHERE input_file=$input_file`
 );
 const inpListAll = _db.query(`SELECT input_file FROM input_files`);
-const inpGetByFilepath = _db.query(
-  `SELECT input_file FROM input_files WHERE input_file=$filepath`
+const inpGetByInputFile = _db.query(
+  `SELECT input_file FROM input_files WHERE input_file=$input_file`
 );
 
 const qEnq = _db.query(
   `INSERT OR IGNORE INTO jobs(raw_cmd, localized_cmd, input_file, status)
-  VALUES($raw_cmd, $localized_cmd, $input_file, $status)`
+  VALUES($raw_cmd, $localized_cmd, $input_file, $status) RETURNING id`
 );
 
 const qStatusUpdate = _db.query(
   `UPDATE jobs SET status=$status, updated_at=unixepoch() WHERE input_file=$input_file`
 );
 
-const qGetByFilepath = _db.query(
+const qStatusUpdateFrom = _db.query(
+  `UPDATE jobs SET status=$new_status, updated_at=unixepoch()
+   WHERE input_file=$input_file AND status=$old_status`
+);
+
+const qGetByInputFile = _db.query(
   `SELECT * FROM jobs WHERE input_file=$input_file`
 );
 
@@ -89,12 +98,13 @@ export const jobsManager = {
   setSuccess: qOk,
   setFail: qFail,
   updateStatus: qStatusUpdate,
-  getByFilepath: qGetByFilepath,
+  updateStatusFrom: qStatusUpdateFrom,
+  getByInputFile: qGetByInputFile,
 };
 
 export const inputFilesManager = {
   add: inpAdd,
   remove: inpRemove,
   listAll: inpListAll,
-  getByFilepath: inpGetByFilepath,
+  getByInputFile: inpGetByInputFile,
 };

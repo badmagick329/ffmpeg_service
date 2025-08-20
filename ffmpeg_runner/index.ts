@@ -9,12 +9,14 @@ import { InputWatchService } from "./services/input-watch-service";
 import type { MakeWatcher } from "./core/ifs-watcher";
 import { JobCreationService } from "./services/job-creation-service";
 import { ParsedCmd } from "./core/parsed-cmd";
+import { JobsRepository } from "./infra/repositories/jobs-repository";
+import { JOB_STATUS } from "./core/job";
 
 async function main() {
   // testRunner();
-  // testInputChecker();
+  testInputChecker();
   // testWatcher();
-  testJobCreationService();
+  // testJobCreationService();
 }
 function testJobCreationService() {
   const pathTranslator = new PathTranslator({
@@ -23,12 +25,13 @@ function testJobCreationService() {
   });
   const cmdTranslater = new CmdTranslater(pathTranslator);
   const inputRepo = new InputFilesRepository();
-  // const jobCreationService = new JobCreationService(
-  //   cmdTranslater,
-  //   inputRepo,
-  //   {}
-  // );
-  // jobCreationService.enqueue(config.sampleCmd);
+  const jobsRepo = new JobsRepository();
+  const jobCreationService = new JobCreationService(
+    cmdTranslater,
+    inputRepo,
+    jobsRepo
+  );
+  jobCreationService.enqueue(config.sampleCmd);
 }
 
 function testWatcher() {
@@ -38,17 +41,35 @@ function testWatcher() {
       .onChange(onChange)
       .build();
 
-  const inputRepo = new InputFilesRepository();
-  const watchService = new InputWatchService(inputRepo, makeWatcher);
+  const inputsRepo = new InputFilesRepository();
+  const jobsRepo = new JobsRepository();
+  const watchService = new InputWatchService(inputsRepo, jobsRepo, makeWatcher);
   watchService.start();
 }
 
 async function testInputChecker() {
-  const repo = new InputFilesRepository();
-  const testFile = "../data/incoming/file.mp4";
-  const result = repo.add(testFile);
+  const inputsRepo = new InputFilesRepository();
+  const jobsRepo = new JobsRepository();
+  const testFile = "../data/incoming/120614 input.mkv";
+
+  const result = inputsRepo.add(testFile);
   console.log("Added file:", result);
-  console.log(repo.exists(testFile));
+  if (result) {
+    jobsRepo.updateStatusFrom(
+      result.inputFile,
+      JOB_STATUS.MISSING_INPUT,
+      JOB_STATUS.PENDING
+    );
+  }
+  console.log(inputsRepo.exists(testFile));
+  prompt("Press Enter to remove the file...");
+  inputsRepo.remove(testFile);
+  console.log("File removed. Exists now?", inputsRepo.exists(testFile));
+  jobsRepo.updateStatusFrom(
+    testFile,
+    JOB_STATUS.PENDING,
+    JOB_STATUS.MISSING_INPUT
+  );
 }
 
 async function testRunner() {

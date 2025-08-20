@@ -1,39 +1,32 @@
 import type { IInputFilesRepository } from "../../core/iinput-files-repository";
-import { jobsManager, inputFilesManager } from "../db";
+import { inputFilesManager } from "../db";
 
 export class InputFilesRepository implements IInputFilesRepository {
   private _add: typeof inputFilesManager.add;
   private _remove: typeof inputFilesManager.remove;
-  private _updateStatus: typeof jobsManager.updateStatus;
-  private _getByFilepath: typeof inputFilesManager.getByFilepath;
+  private _getByInputFile: typeof inputFilesManager.getByInputFile;
 
   constructor() {
     this._add = inputFilesManager.add;
     this._remove = inputFilesManager.remove;
-    this._updateStatus = jobsManager.updateStatus;
-    this._getByFilepath = inputFilesManager.getByFilepath;
+    this._getByInputFile = inputFilesManager.getByInputFile;
   }
 
-  add(filepath: string) {
-    const result = this._add.get({ $filepath: filepath }) as
-      | { id: number; filepath: string }
+  add(inputFile: string) {
+    const result = this._add.get({ $input_file: inputFile }) as
+      | { id: number; input_file: string }
       | undefined;
-    // TODO: Mark jobs with this input + status missing_input as pending
-    return result ? { id: result.id, filepath: result.filepath } : null;
+    return result ? { id: result.id, inputFile: result.input_file } : null;
   }
 
-  remove(filepath: string) {
-    this._remove.run({ $filepath: filepath });
+  remove(inputFile: string) {
+    this._remove.run({ $input_file: inputFile });
   }
 
-  exists(filepath: string): boolean {
-    const result = this._getByFilepath.get({ $filepath: filepath }) as
-      | { filepath: string }
+  exists(inputFile: string): boolean {
+    const result = this._getByInputFile.get({ $input_file: inputFile }) as
+      | { input_file: string }
       | undefined;
-    return result?.filepath === filepath;
-  }
-
-  updateStatus(filepath: string, status: string) {
-    this._updateStatus.run({ $input_file: filepath, $status: status });
+    return result?.input_file === inputFile;
   }
 }
