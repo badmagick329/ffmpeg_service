@@ -8,11 +8,13 @@ import { FsWatcherBuilder } from "./infra/fs-watcher-builder";
 import { InputWatchService } from "./services/input-watch-service";
 import type { MakeWatcher } from "./core/ifs-watcher";
 import { JobCreationService } from "./services/job-creation-service";
+import { ParsedCmd } from "./core/parsed-cmd";
 
 async function main() {
-  testRunner();
+  // testRunner();
   // testInputChecker();
   // testWatcher();
+  testJobCreationService();
 }
 function testJobCreationService() {
   const pathTranslator = new PathTranslator({
@@ -20,7 +22,13 @@ function testJobCreationService() {
     dst: config.dst,
   });
   const cmdTranslater = new CmdTranslater(pathTranslator);
-  const jobCreationService = new JobCreationService(cmdTranslater);
+  const inputRepo = new InputFilesRepository();
+  // const jobCreationService = new JobCreationService(
+  //   cmdTranslater,
+  //   inputRepo,
+  //   {}
+  // );
+  // jobCreationService.enqueue(config.sampleCmd);
 }
 
 function testWatcher() {
@@ -49,7 +57,9 @@ async function testRunner() {
     dst: config.dst,
   });
   const cmdTranslator = new CmdTranslater(translator);
-  console.log(cmdTranslator.localizeCmd(config.sampleCmd));
+  // testing localize
+  const parsedSample = ParsedCmd.create(config.sampleCmd);
+  console.log(cmdTranslator.localizeCmd(parsedSample));
 
   const cmdRunner = new FFmpegCommandRunner(cmdTranslator);
   const runner = new RunnerService(cmdRunner, cmdTranslator);

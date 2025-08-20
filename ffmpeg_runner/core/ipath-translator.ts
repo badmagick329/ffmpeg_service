@@ -1,3 +1,3 @@
 export interface IPathTranslator {
-  localize(filePath: string, isInput: boolean): string;
+  localize(filepath: string, isInput: boolean): string;
 }

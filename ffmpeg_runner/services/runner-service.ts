@@ -1,4 +1,5 @@
 import type { ICmdTranslator } from "../core/icmd-translator";
+import { ParsedCmd } from "../core/parsed-cmd";
 import type { IFFmpegCommandRunner } from "./iffmpeg-command-runner";
 
 export class RunnerService {
@@ -9,7 +10,8 @@ export class RunnerService {
 
   async run({ cmd, debug = false }: { cmd: string; debug: boolean }) {
     // TODO: Add error handling and logging
-    const localizeCmd = this.cmdTranslator.localizeCmd(cmd);
-    return await this.runner.run({ cmd: localizeCmd, debug });
+    const parsed = ParsedCmd.create(cmd);
+    const localizedParse = this.cmdTranslator.localizeCmd(parsed);
+    return await this.runner.run({ cmd: localizedParse.cmd, debug });
   }
 }

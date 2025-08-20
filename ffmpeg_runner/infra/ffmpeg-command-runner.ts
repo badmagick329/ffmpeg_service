@@ -1,4 +1,5 @@
 import type { ICmdTranslator } from "../core/icmd-translator";
+import { ParsedCmd } from "../core/parsed-cmd";
 import type { IFFmpegCommandRunner } from "../services/iffmpeg-command-runner";
 
 export class FFmpegCommandRunner implements IFFmpegCommandRunner {
@@ -15,7 +16,8 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
     stdout: string;
     exitCode: number;
   }> {
-    const arrayCmd = this.cmdTranslater.cmdToArray(cmd);
+    const parsed = ParsedCmd.create(cmd);
+    const arrayCmd = this.cmdTranslater.cmdToArray(parsed);
     if (debug) {
       console.log("Running command in debug:", arrayCmd);
       return {

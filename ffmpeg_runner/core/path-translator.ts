@@ -13,27 +13,27 @@ export class PathTranslator implements IPathTranslator {
     this.dst = dst;
   }
 
-  localize(filePath: string, isInput: boolean = true): string {
-    if (filePath.includes("\\")) {
-      if (filePath.includes("/")) {
+  localize(filepath: string, isInput: boolean = true): string {
+    if (filepath.includes("\\")) {
+      if (filepath.includes("/")) {
         throw new Error(
-          `Invalid filepath: ${filePath}. Cannot contain both '\\' and '/'`
+          `Invalid filepath: ${filepath}. Cannot contain both '\\' and '/'`
         );
       }
 
-      const match = filePath.match(/.+\\(?<filename>.+)/);
+      const match = filepath.match(/.+\\(?<filename>.+)/);
       if (!match) {
         throw new Error(
-          `Invalid filepath: ${filePath}. Must end with '\\filename'`
+          `Invalid filepath: ${filepath}. Must end with '\\filename'`
         );
       }
       const filename = match.groups!.filename!;
       return `${isInput ? this.src : this.dst}/${filename}`;
     }
-    if (filePath.includes("/")) {
-      return filePath;
+    if (filepath.includes("/")) {
+      return filepath;
     }
 
-    throw new Error(`Invalid filepath: ${filePath}. Must contain '/' or '\\'`);
+    throw new Error(`Invalid filepath: ${filepath}. Must contain '/' or '\\'`);
   }
 }

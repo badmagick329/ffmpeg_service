@@ -1,36 +1,26 @@
 import type { ICmdTranslator } from "./icmd-translator";
 import type { IPathTranslator } from "./ipath-translator";
-
-type CmdParts = {
-  start: string;
-  input: string;
-  params: string;
-  output: string;
-};
+import { ParsedCmd } from "./parsed-cmd";
 
 export class CmdTranslater implements ICmdTranslator {
-  private static cmdRegex =
-    /(?<start>.+?)"(?<input>.+)"(?<params>.+?)"(?<output>.+)"/;
-
   constructor(private readonly pathTranslater: IPathTranslator) {}
 
-  localizeCmd(cmd: string): string {
-    const { start, input, params, output } = this.getParts(cmd);
-    const localizedInput = this.pathTranslater.localize(input, true);
-    const localizedOutput = this.pathTranslater.localize(output, false);
-    return `${start}"${localizedInput}"${params}"${localizedOutput}"`;
+  localizeCmd(cmd: ParsedCmd): ParsedCmd {
+    const localizedInput = this.pathTranslater.localize(cmd.input, true);
+    const localizedOutput = this.pathTranslater.localize(cmd.output, false);
+    return ParsedCmd.create(
+      `${cmd.start}"${localizedInput}"${cmd.params}"${localizedOutput}"`
+    );
   }
 
-  cmdToArray(cmd: string): string[] {
-    const { start, input, params, output } = this.getParts(cmd);
+  cmdToArray(cmd: ParsedCmd): string[] {
+    const startParts = cmd.start.split(" ").filter(Boolean);
+    const paramsParts = cmd.params.split(" ").filter(Boolean);
 
-    const startParts = start.split(" ").filter(Boolean);
-    const paramsParts = params.split(" ").filter(Boolean);
-
-    return [...startParts, input, ...paramsParts, output];
+    return [...startParts, cmd.input, ...paramsParts, cmd.output];
   }
 
-  arrayToCmd(arrayCmd: string[]): string {
+  arrayToCmd(arrayCmd: string[]): ParsedCmd {
     if (arrayCmd.length < 4) {
       throw new Error(
         `Invalid command array: ${arrayCmd}. Expected at least 4 elements: <start> <input> <params> <output>`
@@ -46,28 +36,6 @@ export class CmdTranslater implements ICmdTranslator {
       }
     }
     parts.push(`"${arrayCmd[arrayCmd.length - 1]}"`);
-    return parts.join(" ");
-  }
-
-  private getParts(cmd: string): CmdParts {
-    const match = cmd.match(CmdTranslater.cmdRegex);
-    if (!match) {
-      throw new Error(
-        `Invalid command format: ${cmd}. Expected format: <start> <input> <params> <output>`
-      );
-    }
-    const { start, input, params, output } = match.groups!;
-    if (!start || !input || !params || !output) {
-      throw new Error(
-        `Invalid command format: ${cmd}. Expected format: <start> <input> <params> <output>`
-      );
-    }
-
-    return {
-      start,
-      input,
-      params,
-      output,
-    };
+    return ParsedCmd.create(parts.join(" "));
   }
 }

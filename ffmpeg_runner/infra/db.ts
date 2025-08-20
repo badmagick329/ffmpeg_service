@@ -1,12 +1,6 @@
 import { Database } from "bun:sqlite";
 
 const _db = new Database("ffmpeg_service.db");
-export const JOB_STATUS = {
-  MISSING_INPUT: "missing_input",
-  PENDING: "pending",
-  RUNNING: "running",
-  SUCCEEDED: "succeeded",
-} as const;
 
 _db.exec(`
 PRAGMA journal_mode=WAL;
@@ -15,8 +9,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   id              INTEGER PRIMARY KEY,
   raw_cmd         TEXT NOT NULL,
   localized_cmd   TEXT NOT NULL,
-  filepath        TEXT NOT NULL,
-  cmd_hash        TEXT NOT NULL UNIQUE,
+  input_file      TEXT NOT NULL,
   status          TEXT NOT NULL CHECK(status IN ('missing_input','pending','running','succeeded','failed')),
   attempts        INTEGER NOT NULL DEFAULT 0,
   last_error      TEXT,
@@ -27,36 +20,40 @@ CREATE TABLE IF NOT EXISTS jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_lease  ON jobs(lease_until);
-CREATE INDEX IF NOT EXISTS idx_jobs_filepath ON jobs(filepath);
+CREATE INDEX IF NOT EXISTS idx_jobs_filepath ON jobs(input_file);
 CREATE TABLE IF NOT EXISTS input_files (
   id              INTEGER PRIMARY KEY,
-  filepath        TEXT NOT NULL UNIQUE,
+  input_file      TEXT NOT NULL UNIQUE,
   created_at      INTEGER NOT NULL DEFAULT (unixepoch())
 );
-CREATE INDEX IF NOT EXISTS idx_input_files_filepath  ON input_files(filepath);
+CREATE INDEX IF NOT EXISTS idx_input_files_filepath  ON input_files(input_file);
 `);
 
 const inpAdd = _db.query(
-  `INSERT OR IGNORE INTO input_files(filepath)
-  VALUES($filepath) RETURNING id,filepath`
+  `INSERT OR IGNORE INTO input_files(input_file)
+  VALUES($filepath) RETURNING id,input_file`
 );
 
-const inpRemove = _db.query(`DELETE FROM input_files WHERE filepath=$filepath`);
-const inpListAll = _db.query(`SELECT filepath FROM input_files`);
+const inpRemove = _db.query(
+  `DELETE FROM input_files WHERE input_file=$filepath`
+);
+const inpListAll = _db.query(`SELECT input_file FROM input_files`);
 const inpGetByFilepath = _db.query(
-  `SELECT filepath FROM input_files WHERE filepath=$filepath`
+  `SELECT input_file FROM input_files WHERE input_file=$filepath`
 );
 
 const qEnq = _db.query(
-  `INSERT OR IGNORE INTO jobs(raw_cmd, localized_cmd, filepath, cmd_hash, status)
-  VALUES($raw_cmd, $localized_cmd, $filepath, $cmd_hash, $status)`
+  `INSERT OR IGNORE INTO jobs(raw_cmd, localized_cmd, input_file, status)
+  VALUES($raw_cmd, $localized_cmd, $input_file, $status)`
 );
 
 const qStatusUpdate = _db.query(
-  `UPDATE jobs SET status=$status, updated_at=unixepoch() WHERE filepath=$filepath`
+  `UPDATE jobs SET status=$status, updated_at=unixepoch() WHERE input_file=$input_file`
 );
 
-const qGetByFilepath = _db.query(`SELECT * FROM jobs WHERE filepath=$filepath`);
+const qGetByFilepath = _db.query(
+  `SELECT * FROM jobs WHERE input_file=$input_file`
+);
 
 const qClaim = _db.query(
   `

@@ -18,6 +18,7 @@ export class InputFilesRepository implements IInputFilesRepository {
     const result = this._add.get({ $filepath: filepath }) as
       | { id: number; filepath: string }
       | undefined;
+    // TODO: Mark jobs with this input + status missing_input as pending
     return result ? { id: result.id, filepath: result.filepath } : null;
   }
 
@@ -33,6 +34,6 @@ export class InputFilesRepository implements IInputFilesRepository {
   }
 
   updateStatus(filepath: string, status: string) {
-    this._updateStatus.run({ $filepath: filepath, $status: status });
+    this._updateStatus.run({ $input_file: filepath, $status: status });
   }
 }
