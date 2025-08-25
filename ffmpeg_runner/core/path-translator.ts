@@ -1,4 +1,5 @@
 import type { IPathTranslator } from "./ipath-translator";
+import * as path from "node:path";
 
 export class PathTranslator implements IPathTranslator {
   private readonly src: string;
@@ -13,27 +14,30 @@ export class PathTranslator implements IPathTranslator {
     this.dst = dst;
   }
 
-  localize(filepath: string, isInput: boolean = true): string {
-    if (filepath.includes("\\")) {
-      if (filepath.includes("/")) {
-        throw new Error(
-          `Invalid filepath: ${filepath}. Cannot contain both '\\' and '/'`
-        );
-      }
-
-      const match = filepath.match(/.+\\(?<filename>.+)/);
-      if (!match) {
-        throw new Error(
-          `Invalid filepath: ${filepath}. Must end with '\\filename'`
-        );
-      }
-      const filename = match.groups!.filename!;
-      return `${isInput ? this.src : this.dst}/${filename}`;
-    }
-    if (filepath.includes("/")) {
-      return filepath;
+  localize({
+    filepath,
+    isInput = true,
+  }: {
+    filepath: string;
+    isInput: boolean;
+  }): string {
+    if (filepath.includes("\\") && filepath.includes("/")) {
+      throw new Error(
+        `Invalid filepath: ${filepath}. Cannot contain both '\\' and '/'`
+      );
     }
 
-    throw new Error(`Invalid filepath: ${filepath}. Must contain '/' or '\\'`);
+    // Escaping for regex
+    const splitter = filepath.includes("\\") ? "\\\\" : "/";
+    const re = RegExp(`.+${splitter}(?<filename>.+)`);
+    const match = filepath.match(re);
+    if (!match) {
+      throw new Error(
+        `Invalid filepath: ${filepath}. Must end with '${splitter}filename'`
+      );
+    }
+    const filename = match.groups!.filename!;
+    const prefex = `${isInput ? this.src : this.dst}`;
+    return path.join(prefex, filename);
   }
 }

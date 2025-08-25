@@ -6,8 +6,14 @@ export class CmdTranslater implements ICmdTranslator {
   constructor(private readonly pathTranslater: IPathTranslator) {}
 
   localizeCmd(cmd: ParsedCmd): ParsedCmd {
-    const localizedInput = this.pathTranslater.localize(cmd.input, true);
-    const localizedOutput = this.pathTranslater.localize(cmd.output, false);
+    const localizedInput = this.pathTranslater.localize({
+      filepath: cmd.input,
+      isInput: true,
+    });
+    const localizedOutput = this.pathTranslater.localize({
+      filepath: cmd.output,
+      isInput: false,
+    });
     return ParsedCmd.create(
       `${cmd.start}"${localizedInput}"${cmd.params}"${localizedOutput}"`
     );
