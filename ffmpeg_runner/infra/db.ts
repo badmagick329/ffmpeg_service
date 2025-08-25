@@ -60,6 +60,10 @@ const qStatusUpdateFrom = _db.query(
    WHERE input_file=$input_file AND status=$old_status`
 );
 
+const qGetJobIdWithLocalizedCmd = _db.query(
+  `SELECT id FROM jobs WHERE localized_cmd=$localized_cmd`
+);
+
 const qGetByInputFile = _db.query(
   `SELECT * FROM jobs WHERE input_file=$input_file`
 );
@@ -100,6 +104,7 @@ export const jobsManager = {
   updateStatus: qStatusUpdate,
   changeStatusFrom: qStatusUpdateFrom,
   getByInputFile: qGetByInputFile,
+  getJobIdWithLocalizedCmd: qGetJobIdWithLocalizedCmd,
 };
 
 export const inputFilesManager = {

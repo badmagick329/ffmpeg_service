@@ -6,11 +6,23 @@ export class JobsRepository implements IJobsRepository {
   private _enqueue: typeof jobsManager.enqueue;
   private _updateStatus: typeof jobsManager.updateStatus;
   private _changeStatusFrom: typeof jobsManager.changeStatusFrom;
+  private _getJobIdWithLocalizedCmd: typeof jobsManager.getJobIdWithLocalizedCmd;
 
   constructor() {
     this._enqueue = jobsManager.enqueue;
     this._updateStatus = jobsManager.updateStatus;
     this._changeStatusFrom = jobsManager.changeStatusFrom;
+    this._getJobIdWithLocalizedCmd = jobsManager.getJobIdWithLocalizedCmd;
+  }
+  enqueueUnique(job: Job): { id: number } | null {
+    const existing = this._getJobIdWithLocalizedCmd.get({
+      $localized_cmd: job.localizedCmd,
+    }) as { id: number } | undefined;
+    if (existing) {
+      return null;
+    }
+
+    return this.enqueue(job);
   }
 
   enqueue(job: Job): { id: number } | null {

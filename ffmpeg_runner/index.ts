@@ -31,7 +31,8 @@ function testJobCreationService() {
     inputRepo,
     jobsRepo
   );
-  jobCreationService.enqueue(config.sampleCmd);
+  // jobCreationService.enqueue(config.sampleCmd);
+  jobCreationService.enqueueUnique(config.sampleCmd);
 }
 
 function testWatcher() {
