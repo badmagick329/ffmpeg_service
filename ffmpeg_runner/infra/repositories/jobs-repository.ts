@@ -5,12 +5,12 @@ import { jobsManager } from "../db";
 export class JobsRepository implements IJobsRepository {
   private _enqueue: typeof jobsManager.enqueue;
   private _updateStatus: typeof jobsManager.updateStatus;
-  private _updateStatusFrom: typeof jobsManager.updateStatusFrom;
+  private _changeStatusFrom: typeof jobsManager.changeStatusFrom;
 
   constructor() {
     this._enqueue = jobsManager.enqueue;
     this._updateStatus = jobsManager.updateStatus;
-    this._updateStatusFrom = jobsManager.updateStatusFrom;
+    this._changeStatusFrom = jobsManager.changeStatusFrom;
   }
 
   enqueue(job: Job): { id: number } | null {
@@ -29,12 +29,12 @@ export class JobsRepository implements IJobsRepository {
       $status: status,
     });
   }
-  updateStatusFrom(
+  changeStatusFrom(
     inputFile: string,
     oldStatus: JobStatus,
     newStatus: JobStatus
   ): void {
-    this._updateStatusFrom.run({
+    this._changeStatusFrom.run({
       $input_file: inputFile,
       $old_status: oldStatus,
       $new_status: newStatus,

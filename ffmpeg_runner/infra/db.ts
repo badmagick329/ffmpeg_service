@@ -98,7 +98,7 @@ export const jobsManager = {
   setSuccess: qOk,
   setFail: qFail,
   updateStatus: qStatusUpdate,
-  updateStatusFrom: qStatusUpdateFrom,
+  changeStatusFrom: qStatusUpdateFrom,
   getByInputFile: qGetByInputFile,
 };
 

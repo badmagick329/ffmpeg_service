@@ -4,7 +4,7 @@ import type { JobStatus } from "./job";
 export interface IJobsRepository {
   enqueue(job: Job): { id: number } | null;
   updateStatus(inputFile: string, status: JobStatus): void;
-  updateStatusFrom(
+  changeStatusFrom(
     inputFile: string,
     oldStatus: JobStatus,
     newStatus: JobStatus

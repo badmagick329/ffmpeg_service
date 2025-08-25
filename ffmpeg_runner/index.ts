@@ -55,7 +55,7 @@ async function testInputChecker() {
   const result = inputsRepo.add(testFile);
   console.log("Added file:", result);
   if (result) {
-    jobsRepo.updateStatusFrom(
+    jobsRepo.changeStatusFrom(
       result.inputFile,
       JOB_STATUS.MISSING_INPUT,
       JOB_STATUS.PENDING
@@ -65,7 +65,7 @@ async function testInputChecker() {
   prompt("Press Enter to remove the file...");
   inputsRepo.remove(testFile);
   console.log("File removed. Exists now?", inputsRepo.exists(testFile));
-  jobsRepo.updateStatusFrom(
+  jobsRepo.changeStatusFrom(
     testFile,
     JOB_STATUS.PENDING,
     JOB_STATUS.MISSING_INPUT

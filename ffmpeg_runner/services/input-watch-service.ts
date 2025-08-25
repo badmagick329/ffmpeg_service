@@ -24,7 +24,7 @@ export class InputWatchService {
         // TODO: Logging/retry
         return null;
       }
-      this.jobsRepo.updateStatusFrom(
+      this.jobsRepo.changeStatusFrom(
         filepath,
         JOB_STATUS.MISSING_INPUT,
         JOB_STATUS.PENDING
@@ -38,7 +38,7 @@ export class InputWatchService {
         // TODO: Logging/retry
         return null;
       }
-      this.jobsRepo.updateStatusFrom(
+      this.jobsRepo.changeStatusFrom(
         filepath,
         JOB_STATUS.PENDING,
         JOB_STATUS.MISSING_INPUT
