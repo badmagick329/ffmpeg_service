@@ -1,5 +1,4 @@
-import type { Job } from "./job";
-import type { JobStatus } from "./job";
+import type { Job, JobStatus } from "@/core/models/job";
 
 export interface IJobsRepository {
   /**

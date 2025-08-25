@@ -10,6 +10,12 @@
 
     // Bundler mode
     "moduleResolution": "bundler",
+    // Treat project src as module base so path aliases work (e.g. "@/core/...")
+    "baseUrl": "src",
+    "paths": {
+      "@/*": ["./*"],
+      "@": ["./"]
+    },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
@@ -25,5 +31,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  "exclude": ["node_modules"]
 }

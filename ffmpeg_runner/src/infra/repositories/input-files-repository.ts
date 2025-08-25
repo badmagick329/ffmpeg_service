@@ -1,5 +1,5 @@
-import type { IInputFilesRepository } from "../../core/iinput-files-repository";
-import { inputFilesManager } from "../db";
+import type { IInputFilesRepository } from "@/core/repositories/iinput-files-repository";
+import { inputFilesManager } from "@/infra/db";
 
 export class InputFilesRepository implements IInputFilesRepository {
   private _add: typeof inputFilesManager.add;

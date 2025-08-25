@@ -1,6 +1,6 @@
-import type { IJobsRepository } from "../../core/ijobs-repository";
-import type { Job, JobStatus } from "../../core/job";
-import { jobsManager } from "../db";
+import type { IJobsRepository } from "@/core/repositories/ijobs-repository";
+import type { Job, JobStatus } from "@/core/models/job";
+import { jobsManager } from "@/infra/db";
 
 export class JobsRepository implements IJobsRepository {
   private _enqueue: typeof jobsManager.enqueue;

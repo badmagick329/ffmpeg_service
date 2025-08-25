@@ -1,5 +1,5 @@
-import type { OnChange } from "../core/ifs-watcher";
-import { FsWatcher } from "./fs-watcher";
+import type { OnChange } from "@/core/watchers/ifs-watcher";
+import { FsWatcher } from "@/infra/fs-watcher";
 
 export type PathSet = true | false;
 export type CallbackSet = true | false;

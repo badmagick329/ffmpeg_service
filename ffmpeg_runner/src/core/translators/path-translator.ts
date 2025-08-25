@@ -1,5 +1,8 @@
-import type { IPathTranslator } from "./ipath-translator";
 import * as path from "node:path";
+
+export interface IPathTranslator {
+  localize(params: { filepath: string; isInput: boolean }): string;
+}
 
 export class PathTranslator implements IPathTranslator {
   private readonly src: string;

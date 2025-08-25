@@ -1,26 +1,5 @@
 import chokidar from "chokidar";
-import type { OnChange } from "../core/ifs-watcher";
-
-// path type on add event:
-//  * Stats {
-//  *   dev: 2114,
-//  *   ino: 48064969,
-//  *   mode: 33188,
-//  *   nlink: 1,
-//  *   uid: 85,
-//  *   gid: 100,
-//  *   rdev: 0,
-//  *   size: 527,
-//  *   blksize: 4096,
-//  *   blocks: 8,
-//  *   atimeMs: 1318289051000.1,
-//  *   mtimeMs: 1318289051000.1,
-//  *   ctimeMs: 1318289051000.1,
-//  *   birthtimeMs: 1318289051000.1,
-//  *   atime: Mon, 10 Oct 2011 23:24:11 GMT,
-//  *   mtime: Mon, 10 Oct 2011 23:24:11 GMT,
-//  *   ctime: Mon, 10 Oct 2011 23:24:11 GMT,
-//  *   birthtime: Mon, 10 Oct 2011 23:24:11 GMT }
+import type { OnChange } from "@/core/watchers/ifs-watcher";
 
 export class FsWatcher {
   constructor(

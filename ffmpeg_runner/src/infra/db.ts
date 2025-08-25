@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { JOB_STATUS } from "../core/job";
+import { JOB_STATUS } from "@/core/models/job";
 
 const _db = new Database("ffmpeg_service.db");
 const statusValues = Object.values(JOB_STATUS)

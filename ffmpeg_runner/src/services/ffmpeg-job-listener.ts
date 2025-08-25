@@ -1,7 +1,7 @@
-import type { ICmdTranslator } from "../core/icmd-translator";
-import type { IJobsRepository } from "../core/ijobs-repository";
-import { ParsedCmd } from "../core/parsed-cmd";
-import type { IFFmpegCommandRunner } from "./iffmpeg-command-runner";
+import type { ICmdTranslator } from "@/core/translators/cmd-translator";
+import type { IJobsRepository } from "@/core/repositories/ijobs-repository";
+import { ParsedCmd } from "@/core/models/parsed-cmd";
+import type { IFFmpegCommandRunner } from "@/services/iffmpeg-command-runner";
 
 export class FFmpegJobListener {
   constructor(
@@ -34,5 +34,10 @@ export class FFmpegJobListener {
     const parsed = ParsedCmd.create(cmd);
     const localizedParse = this.cmdTranslator.localizeCmd(parsed);
     return await this.runner.run({ cmd: localizedParse.cmd, debug });
+  }
+
+  // Public helper for tests and manual invocation
+  async execute({ cmd, debug = false }: { cmd: string; debug: boolean }) {
+    return this.run({ cmd, debug });
   }
 }

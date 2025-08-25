@@ -1,16 +1,16 @@
-import { CmdTranslater } from "./core/cmd-translator";
-import { PathTranslator } from "./core/path-translator";
-import { FFmpegCommandRunner } from "./infra/ffmpeg-command-runner";
-import { config } from "./infra/config";
-import { FFmpegJobListener } from "./services/ffmpeg-job-listener";
-import { InputFilesRepository } from "./infra/repositories/input-files-repository";
-import { FsWatcherBuilder } from "./infra/fs-watcher-builder";
-import { InputWatchService } from "./services/input-watch-service";
-import type { MakeWatcher } from "./core/ifs-watcher";
-import { JobCreationService } from "./services/job-creation-service";
-import { ParsedCmd } from "./core/parsed-cmd";
-import { JobsRepository } from "./infra/repositories/jobs-repository";
-import { JOB_STATUS } from "./core/job";
+import { CmdTranslater } from "@/core/translators/cmd-translator";
+import { PathTranslator } from "@/core/translators/path-translator";
+import { FFmpegCommandRunner } from "@/infra/ffmpeg-command-runner";
+import { config } from "@/infra/config";
+import { FFmpegJobListener } from "@/services/ffmpeg-job-listener";
+import { InputFilesRepository } from "@/infra/repositories/input-files-repository";
+import { FsWatcherBuilder } from "@/infra/fs-watcher-builder";
+import { InputWatchService } from "@/services/input-watch-service";
+import type { MakeWatcher } from "@/core/watchers/ifs-watcher";
+import { JobCreationService } from "@/services/job-creation-service";
+import { ParsedCmd } from "@/core/models/parsed-cmd";
+import { JobsRepository } from "@/infra/repositories/jobs-repository";
+import { JOB_STATUS } from "@/core/models/job";
 
 async function main() {
   // testRunner();
@@ -121,7 +121,7 @@ async function testRunner() {
   );
 
   // simulating run
-  const result = await ffmpegWatcher._run({
+  const result = await ffmpegWatcher.execute({
     cmd: config.sampleCmd,
     debug: true,
   });

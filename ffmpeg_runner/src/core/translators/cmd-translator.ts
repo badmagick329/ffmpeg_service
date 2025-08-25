@@ -1,6 +1,11 @@
-import type { ICmdTranslator } from "./icmd-translator";
-import type { IPathTranslator } from "./ipath-translator";
-import { ParsedCmd } from "./parsed-cmd";
+import type { IPathTranslator } from "@/core/translators/path-translator";
+import { ParsedCmd } from "@/core/models/parsed-cmd";
+
+export interface ICmdTranslator {
+  localizeCmd(cmd: ParsedCmd): ParsedCmd;
+  cmdToArray(cmd: ParsedCmd): string[];
+  arrayToCmd(arrayCmd: string[]): ParsedCmd;
+}
 
 export class CmdTranslater implements ICmdTranslator {
   constructor(private readonly pathTranslater: IPathTranslator) {}

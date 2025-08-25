@@ -1,7 +1,11 @@
-import type { IFsWatcher, MakeWatcher, OnChange } from "../core/ifs-watcher";
-import type { IInputFilesRepository } from "../core/iinput-files-repository";
-import type { IJobsRepository } from "../core/ijobs-repository";
-import { JOB_STATUS } from "../core/job";
+import type {
+  IFsWatcher,
+  MakeWatcher,
+  OnChange,
+} from "@/core/watchers/ifs-watcher";
+import type { IInputFilesRepository } from "@/core/repositories/iinput-files-repository";
+import type { IJobsRepository } from "@/core/repositories/ijobs-repository";
+import { JOB_STATUS } from "@/core/models/job";
 
 export class InputWatchService {
   private watcher?: IFsWatcher;
