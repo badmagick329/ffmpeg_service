@@ -7,13 +7,32 @@ export class JobsRepository implements IJobsRepository {
   private _updateStatus: typeof jobsManager.updateStatus;
   private _changeStatusFrom: typeof jobsManager.changeStatusFrom;
   private _getJobIdWithLocalizedCmd: typeof jobsManager.getJobIdWithLocalizedCmd;
+  private _claim: typeof jobsManager.claim;
 
   constructor() {
     this._enqueue = jobsManager.enqueue;
     this._updateStatus = jobsManager.updateStatus;
     this._changeStatusFrom = jobsManager.changeStatusFrom;
     this._getJobIdWithLocalizedCmd = jobsManager.getJobIdWithLocalizedCmd;
+    this._claim = jobsManager.claim;
   }
+
+  claim(
+    wid: number,
+    leaseUntil?: number
+  ): { id: number; localizedCmd: string } | null {
+    const now = Date.now();
+    leaseUntil = leaseUntil ?? now + 1000 * 60 * 60 * 3;
+    const claimed = this._claim.get({
+      $wid: wid,
+      $lease: leaseUntil,
+      $now: now,
+    }) as { id: number; localized_cmd: string } | undefined;
+    return claimed
+      ? { id: claimed.id, localizedCmd: claimed.localized_cmd }
+      : null;
+  }
+
   enqueueUnique(job: Job): { id: number } | null {
     const existing = this._getJobIdWithLocalizedCmd.get({
       $localized_cmd: job.localizedCmd,
