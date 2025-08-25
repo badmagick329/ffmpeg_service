@@ -19,7 +19,11 @@ export class InputWatchService {
 
   private onFsEvent: OnChange = (event, filepath) => {
     if (event === "add") {
-      this.inputsRepo.add(filepath);
+      const result = this.inputsRepo.add(filepath);
+      if (!result) {
+        // TODO: Logging/retry
+        return null;
+      }
       this.jobsRepo.updateStatusFrom(
         filepath,
         JOB_STATUS.MISSING_INPUT,
@@ -29,7 +33,11 @@ export class InputWatchService {
     }
 
     if (event === "unlink") {
-      this.inputsRepo.remove(filepath);
+      const result = this.inputsRepo.remove(filepath);
+      if (!result) {
+        // TODO: Logging/retry
+        return null;
+      }
       this.jobsRepo.updateStatusFrom(
         filepath,
         JOB_STATUS.PENDING,

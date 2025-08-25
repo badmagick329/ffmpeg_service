@@ -39,7 +39,7 @@ const inpAdd = _db.query(
 );
 
 const inpRemove = _db.query(
-  `DELETE FROM input_files WHERE input_file=$input_file`
+  `DELETE FROM input_files WHERE input_file=$input_file RETURNING id,input_file`
 );
 const inpListAll = _db.query(`SELECT input_file FROM input_files`);
 const inpGetByInputFile = _db.query(

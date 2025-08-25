@@ -20,7 +20,10 @@ export class InputFilesRepository implements IInputFilesRepository {
   }
 
   remove(inputFile: string) {
-    this._remove.run({ $input_file: inputFile });
+    const result = this._remove.get({ $input_file: inputFile }) as
+      | { id: number; input_file: string }
+      | undefined;
+    return result ? { id: result.id, inputFile: result.input_file } : null;
   }
 
   exists(inputFile: string): boolean {
