@@ -79,6 +79,26 @@ describe("PathTranslator.localize - edge cases (relative/absolute, unicode, dots
     ).toBe(path.join("./data/incoming", "qux.mp4"));
   });
 
+  it("should preserve leading './' or '.\\' when src includes it (Windows sampleInput)", () => {
+    const srcRel = "./data/incoming";
+    const filepath = ".\\data\\incoming\\120614 input.mkv";
+    const result = translatorRelative.localize({ filepath, isInput: true });
+    const expected =
+      srcRel.replace(/\//g, path.sep) + path.sep + "120614 input.mkv";
+    expect(result).toBe(expected);
+  });
+
+  it("explicitly: sampleInput from config.toml should keep leading dot separator", () => {
+    // sampleInput in config.toml is: '.\\data\\incoming\\120614 input.mkv'
+    const sampleInput = ".\\data\\incoming\\120614 input.mkv";
+    const res = translatorRelative.localize({
+      filepath: sampleInput,
+      isInput: true,
+    });
+    // Expect the result to start with './' or '.\\' depending on platform
+    expect(res.startsWith("." + path.sep)).toBe(true);
+  });
+
   it("should handle absolute POSIX and Windows-style paths", () => {
     // POSIX-style absolute
     expect(

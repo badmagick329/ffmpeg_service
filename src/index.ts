@@ -17,7 +17,7 @@ async function main() {
   // testInputChecker();
   // testWatcher();
   testJobCreationService();
-  // testFFmpegListener();
+  testFFmpegListener();
 }
 
 async function testFFmpegListener() {

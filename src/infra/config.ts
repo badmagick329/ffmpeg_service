@@ -1,4 +1,4 @@
-import conf from "@/config.toml";
+import conf from "../../config.toml";
 
 type ConfigType = {
   src: string;
