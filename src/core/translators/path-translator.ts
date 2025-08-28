@@ -30,14 +30,14 @@ export class PathTranslator implements IPathTranslator {
       );
     }
 
-    const splitter = process.platform === "win32" ? "\\" : "/";
+    const osSplitter = process.platform === "win32" ? "\\" : "/";
     // Escaping for regex
-    const escapedSplitter = splitter === "\\" ? "\\\\" : splitter;
-    const re = RegExp(`.+${escapedSplitter}(?<filename>.+)`);
+    const filepathSplitter = filepath.includes("\\") ? "\\\\" : "/";
+    const re = RegExp(`.+${filepathSplitter}(?<filename>.+)`);
     const match = filepath.match(re);
     if (!match) {
       throw new Error(
-        `Invalid filepath: ${filepath}. Must end with '${splitter}filename'`
+        `Invalid filepath: ${filepath}. Must end with '${osSplitter}filename'`
       );
     }
     const filename = match.groups!.filename!;
@@ -45,8 +45,8 @@ export class PathTranslator implements IPathTranslator {
     // path.join breaks relative paths. fix:
     const origin = isInput ? this.src : this.dst;
     let localized = path.join(origin, filename);
-    if (/\.[\\/]+/.test(origin) && !localized.startsWith(`.${splitter}`)) {
-      localized = `.${splitter}${localized}`;
+    if (/\.[\\/]+/.test(origin) && !localized.startsWith(`.${osSplitter}`)) {
+      localized = `.${osSplitter}${localized}`;
     }
     return localized;
   }
