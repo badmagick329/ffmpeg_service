@@ -2,7 +2,7 @@ import type { ICmdTranslator } from "@/core/translators/cmd-translator";
 import type { IInputFilesRepository } from "@/core/repositories/iinput-files-repository";
 import type { IJobsRepository } from "@/core/repositories/ijobs-repository";
 import { ParsedCmd } from "@/core/models/parsed-cmd";
-import type { Job } from "@/core/models/job";
+import { Job } from "@/core/models/job";
 
 export class JobCreationService {
   constructor(
@@ -41,15 +41,16 @@ export class JobCreationService {
    * @throws {Error} If the ffmpeg command is invalid.
    */
   private createJob(ffmpegCmd: string): Job {
-    const parsedCmd = ParsedCmd.create(ffmpegCmd);
-    const localizedCmd = this.cmdTranslator.localizeCmd(parsedCmd);
+    console.log(
+      `[JobCreationService] - Creating job for command: ${ffmpegCmd}`
+    );
+    const job = Job.fromCmd(ffmpegCmd, this.cmdTranslator);
 
-    const exists = this.inputRepo.exists(localizedCmd.input);
-    return {
-      rawCmd: parsedCmd.cmd,
-      localizedCmd: localizedCmd.cmd,
-      inputFile: localizedCmd.input,
-      status: exists ? "pending" : "missing_input",
-    } as Job;
+    console.log(`[JobCreationService] - Checking if ${job.inputFile} exists`);
+    const exists = this.inputRepo.exists(job.inputFile);
+    if (exists) {
+      job.status = "pending";
+    }
+    return job;
   }
 }

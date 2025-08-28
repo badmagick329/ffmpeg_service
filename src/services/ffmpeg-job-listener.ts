@@ -10,7 +10,7 @@ export class FFmpegJobListener {
     private readonly jobRepo: IJobsRepository
   ) {}
 
-  async watch() {
+  async listen() {
     while (true) {
       // NOTE: Hardcoded worker ID for now
       const job = this.jobRepo.claim(1);
@@ -19,11 +19,14 @@ export class FFmpegJobListener {
         continue;
       }
       try {
+        // TODO: Mark failed ffmpeg conversiosn as failed status
         await this.run({ cmd: job.localizedCmd, debug: false });
-        console.log(`Job ${job.id} completed successfully.`);
+        console.log(
+          `[FFmpegJobListener] - Job ${job.id} completed successfully.`
+        );
         this.jobRepo.updateStatus(job.localizedCmd, "succeeded");
       } catch (error) {
-        console.log(`Job ${job.id} failed: ${error}`);
+        console.log(`[FFmpegJobListener] - Job ${job.id} failed: ${error}`);
         this.jobRepo.updateStatus(job.localizedCmd, "failed");
       }
     }

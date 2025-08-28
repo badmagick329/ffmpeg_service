@@ -54,9 +54,9 @@ export class JobsRepository implements IJobsRepository {
     return result ? { id: result.id } : null;
   }
 
-  updateStatus(inputFile: string, status: JobStatus): void {
+  updateStatus(localizedCmd: string, status: JobStatus): void {
     this._updateStatus.run({
-      $input_file: inputFile,
+      $localized_cmd: localizedCmd,
       $status: status,
     });
   }

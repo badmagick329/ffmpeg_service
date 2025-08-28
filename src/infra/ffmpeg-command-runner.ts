@@ -3,7 +3,7 @@ import { ParsedCmd } from "@/core/models/parsed-cmd";
 import type { IFFmpegCommandRunner } from "@/services/iffmpeg-command-runner";
 
 export class FFmpegCommandRunner implements IFFmpegCommandRunner {
-  constructor(readonly cmdTranslater: ICmdTranslator) {}
+  constructor(readonly cmdTranslator: ICmdTranslator) {}
 
   /**
    * @param cmd - The command to run, e.g. 'ffmpeg -y -i "./input.mkv" -c:v libx264 -crf 24 -preset slow -c:a copy -vf bwdif=mode=1:parity=auto:deint=1 -ss 00:00:05.380 -to 00:00:13.054 "./output.mkv"'
@@ -17,9 +17,12 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
     exitCode: number;
   }> {
     const parsed = ParsedCmd.create(cmd);
-    const arrayCmd = this.cmdTranslater.cmdToArray(parsed);
+    const arrayCmd = this.cmdTranslator.cmdToArray(parsed);
     if (debug) {
-      console.log("Running command in debug:", arrayCmd);
+      console.log(
+        "[FFmpegCommandRunner] - Running command in debug:",
+        arrayCmd
+      );
       return {
         exitCode: 0,
         stderr: "Debug mode: Command not executed",
@@ -27,7 +30,7 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
       };
     }
 
-    console.log("Running command", arrayCmd);
+    console.log("[FFmpegCommandRunner] - Running command", arrayCmd);
     const proc = Bun.spawn(arrayCmd, {
       stderr: "pipe",
       stdout: "pipe",

@@ -7,21 +7,20 @@ export interface ICmdTranslator {
   arrayToCmd(arrayCmd: string[]): ParsedCmd;
 }
 
-export class CmdTranslater implements ICmdTranslator {
-  constructor(private readonly pathTranslater: IPathTranslator) {}
+export class CmdTranslator implements ICmdTranslator {
+  constructor(private readonly pathTranslator: IPathTranslator) {}
 
   localizeCmd(cmd: ParsedCmd): ParsedCmd {
-    const localizedInput = this.pathTranslater.localize({
+    const localizedInput = this.pathTranslator.localize({
       filepath: cmd.input,
       isInput: true,
     });
-    const localizedOutput = this.pathTranslater.localize({
+    const localizedOutput = this.pathTranslator.localize({
       filepath: cmd.output,
       isInput: false,
     });
-    return ParsedCmd.create(
-      `${cmd.start}"${localizedInput}"${cmd.params}"${localizedOutput}"`
-    );
+    const result = `${cmd.start}"${localizedInput}"${cmd.params}"${localizedOutput}"`;
+    return ParsedCmd.create(result);
   }
 
   cmdToArray(cmd: ParsedCmd): string[] {

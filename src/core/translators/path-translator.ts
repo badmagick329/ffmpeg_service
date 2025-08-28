@@ -30,9 +30,10 @@ export class PathTranslator implements IPathTranslator {
       );
     }
 
+    const splitter = filepath.includes("\\") ? "\\" : "/";
     // Escaping for regex
-    const splitter = filepath.includes("\\") ? "\\\\" : "/";
-    const re = RegExp(`.+${splitter}(?<filename>.+)`);
+    const escapedSplitter = splitter === "\\" ? "\\\\" : splitter;
+    const re = RegExp(`.+${escapedSplitter}(?<filename>.+)`);
     const match = filepath.match(re);
     if (!match) {
       throw new Error(
@@ -40,29 +41,13 @@ export class PathTranslator implements IPathTranslator {
       );
     }
     const filename = match.groups!.filename!;
-    const prefex = `${isInput ? this.src : this.dst}`;
-    let localized = path.join(prefex, filename);
 
-    // If the original filepath started with a dot + separator ("./" or ".\\"),
-    // only reapply the leading dot when the remainder of the filepath actually
-    // corresponds to the configured prefix (e.g. './data/incoming/...').
-    // This avoids adding './' for unrelated inputs like './foo/bar'.
-    if (/^\.([\\/])/.test(filepath)) {
-      // strip leading './' or '.\\' from both strings and normalize separators
-      const stripLeadingDot = (s: string) => s.replace(/^\.([\\/])/, "");
-      const normalizeSep = (s: string) => s.replace(/[\\/]+/g, path.sep);
-
-      const filepathNoDot = normalizeSep(stripLeadingDot(filepath));
-      const prefexNoDot = normalizeSep(stripLeadingDot(prefex));
-
-      if (filepathNoDot.startsWith(prefexNoDot)) {
-        const dotPrefix = "." + path.sep;
-        if (!localized.startsWith(dotPrefix)) {
-          localized = dotPrefix + localized;
-        }
-      }
+    // path.join breaks relative paths. fix:
+    const origin = isInput ? this.src : this.dst;
+    let localized = path.join(origin, filename);
+    if (/\.[\\/]+/.test(origin) && !localized.startsWith(`.${splitter}`)) {
+      localized = `.${splitter}${localized}`;
     }
-
     return localized;
   }
 }

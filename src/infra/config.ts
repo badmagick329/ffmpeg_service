@@ -5,6 +5,7 @@ type ConfigType = {
   dst: string;
   sampleCmd: string;
   sampleInput: string;
+  cmdsInputDir: string;
 };
 
 export const config: ConfigType = {
@@ -12,4 +13,5 @@ export const config: ConfigType = {
   dst: conf.dst,
   sampleCmd: conf.sampleCmd,
   sampleInput: conf.sampleInput,
+  cmdsInputDir: conf.cmdsInputDir,
 };

@@ -1,13 +1,20 @@
 import chokidar from "chokidar";
-import type { OnChange } from "@/core/watchers/ifs-watcher";
+import type { IFsWatcher } from "@/core/watchers/ifs-watcher";
+import { mkdirSync, Stats } from "fs";
 
-export class FsWatcher {
-  constructor(
-    private readonly watchPath: string,
-    private readonly onChange: OnChange
-  ) {}
+export class FsWatcher implements IFsWatcher {
+  constructor(private readonly watchPath: string) {}
+  onAdd(filepath: string, stats?: Stats | undefined): void {
+    throw new Error("Method not implemented.");
+  }
+  onUnlink(filepath: string, stats?: Stats | undefined): void {
+    throw new Error("Method not implemented.");
+  }
+  onChange(filepath: string, stats?: Stats | undefined): void {
+    throw new Error("Method not implemented.");
+  }
 
-  watch({
+  async watch({
     stabilityThreshold = 2000,
     pollInterval = 100,
     usePolling = false,
@@ -20,6 +27,7 @@ export class FsWatcher {
     depth?: number;
     ignoreInitial?: boolean;
   }) {
+    mkdirSync(this.watchPath, { recursive: true });
     chokidar
       .watch(this.watchPath, {
         awaitWriteFinish: {
@@ -32,9 +40,8 @@ export class FsWatcher {
         depth,
         ignoreInitial,
       })
-      // @ts-ignore - For narrower types
-      .on("add", this.onChange)
-      // @ts-ignore - For narrower types
-      .on("unlink", this.onChange);
+      .on("add", this.onAdd)
+      .on("unlink", this.onUnlink)
+      .on("change", this.onChange);
   }
 }

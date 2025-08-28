@@ -13,7 +13,7 @@ export interface IJobsRepository {
   enqueue(job: Job): { id: number } | null;
   updateStatus(inputFile: string, status: JobStatus): void;
   changeStatusFrom(
-    inputFile: string,
+    localizedCmd: string,
     oldStatus: JobStatus,
     newStatus: JobStatus
   ): void;

@@ -52,7 +52,7 @@ const qEnq = _db.query(
 );
 
 const qStatusUpdate = _db.query(
-  `UPDATE jobs SET status=$status, updated_at=unixepoch() WHERE input_file=$input_file`
+  `UPDATE jobs SET status=$status, updated_at=unixepoch() WHERE localized_cmd=$localized_cmd`
 );
 
 const qStatusUpdateFrom = _db.query(
