@@ -30,7 +30,7 @@ export class PathTranslator implements IPathTranslator {
       );
     }
 
-    const splitter = filepath.includes("\\") ? "\\" : "/";
+    const splitter = process.platform === "win32" ? "\\" : "/";
     // Escaping for regex
     const escapedSplitter = splitter === "\\" ? "\\\\" : splitter;
     const re = RegExp(`.+${escapedSplitter}(?<filename>.+)`);
