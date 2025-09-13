@@ -1,5 +1,5 @@
 import chokidar from "chokidar";
-import type { IFsWatcher } from "@/core/watchers/ifs-watcher";
+import type { IFsWatcher } from "@/file-ingestion/core/ifs-watcher";
 import { mkdirSync, Stats } from "fs";
 
 export class FsWatcher implements IFsWatcher {

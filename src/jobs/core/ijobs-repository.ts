@@ -1,4 +1,5 @@
-import type { Job, JobStatus } from "@/core/models/job";
+import type { Job } from "@/jobs/core/job";
+import type { JobStatus } from "@/jobs/core/job-status";
 
 export interface IJobsRepository {
   /**
@@ -9,6 +10,9 @@ export interface IJobsRepository {
    * @returns The claimed job's ID and localized command, or null if no job is available.
    */
   claim(wid: number): { id: number; localizedCmd: string } | null;
+  setSuccess(jobId: number): void;
+  setFail(jobId: number): void;
+  setRunning(jobId: number): void;
   enqueueUnique(job: Job): { id: number } | null;
   enqueue(job: Job): { id: number } | null;
   updateStatus(inputFile: string, status: JobStatus): void;
@@ -17,4 +21,6 @@ export interface IJobsRepository {
     oldStatus: JobStatus,
     newStatus: JobStatus
   ): void;
+  setJobsPending(inputFile: string): void;
+  setJobsMissingInput(inputFile: string): void;
 }

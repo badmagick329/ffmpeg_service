@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { PathTranslator } from "@/core/translators/path-translator";
+import { PathTranslator } from "@/command-translation/path-translator";
 import * as path from "node:path";
 
 // Mock src and dst directories

@@ -1,19 +1,19 @@
-import type { ICmdTranslator } from "@/core/translators/cmd-translator";
-import type { IJobsRepository } from "@/core/repositories/ijobs-repository";
-import { ParsedCmd } from "@/core/models/parsed-cmd";
-import type { IFFmpegCommandRunner } from "@/services/iffmpeg-command-runner";
+import type { ICmdTranslator } from "@/command-translation/cmd-translator";
+import { JobProcessingService } from "@/jobs";
+import { ParsedCmd } from "@/command-translation/parsed-cmd";
+import type { IFFmpegCommandRunner } from "@/ffmpeg-job-listener/app/iffmpeg-command-runner";
 
 export class FFmpegJobListener {
   constructor(
     private readonly runner: IFFmpegCommandRunner,
     private readonly cmdTranslator: ICmdTranslator,
-    private readonly jobRepo: IJobsRepository
+    private readonly jobProcessingService: JobProcessingService
   ) {}
 
   async listen() {
     while (true) {
       // NOTE: Hardcoded worker ID for now
-      const job = this.jobRepo.claim(1);
+      const job = this.jobProcessingService.claim();
       if (!job) {
         await new Promise((resolve) => setTimeout(resolve, 5000));
         continue;
@@ -24,10 +24,10 @@ export class FFmpegJobListener {
         console.log(
           `[FFmpegJobListener] - Job ${job.id} completed successfully.`
         );
-        this.jobRepo.updateStatus(job.localizedCmd, "succeeded");
+        this.jobProcessingService.setSuccess(job.id);
       } catch (error) {
         console.log(`[FFmpegJobListener] - Job ${job.id} failed: ${error}`);
-        this.jobRepo.updateStatus(job.localizedCmd, "failed");
+        this.jobProcessingService.setFail(job.id);
       }
     }
   }

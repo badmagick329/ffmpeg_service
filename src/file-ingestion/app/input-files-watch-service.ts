@@ -1,13 +1,12 @@
-import type { IFsWatcher } from "@/core/watchers/ifs-watcher";
-import type { IInputFilesRepository } from "@/core/repositories/iinput-files-repository";
-import type { IJobsRepository } from "@/core/repositories/ijobs-repository";
-import { JOB_STATUS } from "@/core/models/job";
+import type { IFsWatcher } from "@/file-ingestion/core/ifs-watcher";
+import type { IInputFilesRepository } from "@/file-ingestion/core/iinput-files-repository";
+import { JobProcessingService } from "@/jobs";
 import type { Stats } from "fs";
 
 export class InputFilesWatchService {
   constructor(
     private readonly inputsRepo: IInputFilesRepository,
-    private readonly jobsRepo: IJobsRepository,
+    private readonly jobProcessingService: JobProcessingService,
     private readonly watcher: IFsWatcher
   ) {}
 
@@ -26,11 +25,7 @@ export class InputFilesWatchService {
       // TODO: Logging/retry
       return;
     }
-    this.jobsRepo.changeStatusFrom(
-      filepath,
-      JOB_STATUS.MISSING_INPUT,
-      JOB_STATUS.PENDING
-    );
+    this.jobProcessingService.setPending(filepath);
   };
 
   private onUnlink = (filepath: string, stats?: Stats): void => {
@@ -40,10 +35,6 @@ export class InputFilesWatchService {
       // TODO: Logging/retry
       return;
     }
-    this.jobsRepo.changeStatusFrom(
-      filepath,
-      JOB_STATUS.PENDING,
-      JOB_STATUS.MISSING_INPUT
-    );
+    this.jobProcessingService.setMissingInput(filepath);
   };
 }

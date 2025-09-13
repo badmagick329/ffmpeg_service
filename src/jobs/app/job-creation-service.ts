@@ -1,8 +1,7 @@
-import type { ICmdTranslator } from "@/core/translators/cmd-translator";
-import type { IInputFilesRepository } from "@/core/repositories/iinput-files-repository";
-import type { IJobsRepository } from "@/core/repositories/ijobs-repository";
-import { ParsedCmd } from "@/core/models/parsed-cmd";
-import { Job } from "@/core/models/job";
+import type { ICmdTranslator } from "@/command-translation/cmd-translator";
+import type { IInputFilesRepository } from "@/file-ingestion/core/iinput-files-repository";
+import type { IJobsRepository } from "@/jobs/core/ijobs-repository";
+import { Job } from "@/jobs/core/job";
 
 export class JobCreationService {
   constructor(

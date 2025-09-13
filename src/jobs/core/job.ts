@@ -1,15 +1,8 @@
-import { ParsedCmd } from "@/core/models/parsed-cmd";
-import type { ICmdTranslator } from "@/core/translators/cmd-translator";
+import { ParsedCmd } from "@/command-translation/parsed-cmd";
+import type { ICmdTranslator } from "@/command-translation/cmd-translator";
+import type { JobStatus } from "@/jobs/core/job-status";
+import { JOB_STATUS } from "@/jobs/core/job-status";
 import * as path from "node:path";
-
-export const JOB_STATUS = {
-  MISSING_INPUT: "missing_input",
-  PENDING: "pending",
-  RUNNING: "running",
-  SUCCEEDED: "succeeded",
-  FAILED: "failed",
-} as const;
-export type JobStatus = (typeof JOB_STATUS)[keyof typeof JOB_STATUS];
 
 export class Job {
   private constructor(
@@ -30,6 +23,11 @@ export class Job {
     const cmd = ParsedCmd.create(ffmpegCmd);
     const localizedCmd = cmdTranslator.localizeCmd(cmd);
     const filename = path.basename(localizedCmd.input);
-    return new Job(cmd.cmd, localizedCmd.cmd, filename, "missing_input");
+    return new Job(
+      cmd.cmd,
+      localizedCmd.cmd,
+      filename,
+      JOB_STATUS.MISSING_INPUT
+    );
   }
 }

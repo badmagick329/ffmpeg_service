@@ -1,15 +1,21 @@
-import { CmdTranslator } from "@/core/translators/cmd-translator";
-import { PathTranslator } from "@/core/translators/path-translator";
-import { FFmpegCommandRunner } from "@/infra/ffmpeg-command-runner";
+import {
+  CmdTranslator,
+  ParsedCmd,
+  PathTranslator,
+} from "@/command-translation";
 import { config } from "@/infra/config";
-import { FFmpegJobListener } from "@/services/ffmpeg-job-listener";
-import { InputFilesRepository } from "@/infra/repositories/input-files-repository";
-import { InputFilesWatchService } from "@/services/input-files-watch-service";
-import { JobCreationService } from "@/services/job-creation-service";
-import { ParsedCmd } from "@/core/models/parsed-cmd";
-import { JobsRepository } from "@/infra/repositories/jobs-repository";
-import { JOB_STATUS } from "@/core/models/job";
-import { FsWatcher } from "@/infra/fs-watcher";
+import {
+  InputFilesRepository,
+  InputFilesWatchService,
+  FsWatcher,
+} from "@/file-ingestion";
+import {
+  JOB_STATUS,
+  JobCreationService,
+  JobProcessingService,
+  JobsRepository,
+} from "@/jobs";
+import { FFmpegCommandRunner, FFmpegJobListener } from "@/ffmpeg-job-listener";
 
 async function main() {
   // testRunner();
@@ -28,10 +34,11 @@ async function testFFmpegListener() {
 
   const cmdRunner = new FFmpegCommandRunner(cmdTranslator);
   const jobsRepo = new JobsRepository();
+  const jobProcessingService = new JobProcessingService(jobsRepo);
   const ffmpegWatcher = new FFmpegJobListener(
     cmdRunner,
     cmdTranslator,
-    jobsRepo
+    jobProcessingService
   );
 
   console.log("Starting FFmpeg job listener...");
@@ -64,9 +71,10 @@ function testJobCreationService() {
 function testWatcher() {
   const inputsRepo = new InputFilesRepository();
   const jobsRepo = new JobsRepository();
+  const jobProcessingService = new JobProcessingService(jobsRepo);
   const watchService = new InputFilesWatchService(
     inputsRepo,
-    jobsRepo,
+    jobProcessingService,
     new FsWatcher("./data/incoming")
   );
   watchService.start();
@@ -111,10 +119,11 @@ async function testRunner() {
 
   const cmdRunner = new FFmpegCommandRunner(cmdTranslator);
   const jobsRepo = new JobsRepository();
+  const jobProcessingService = new JobProcessingService(jobsRepo);
   const ffmpegWatcher = new FFmpegJobListener(
     cmdRunner,
     cmdTranslator,
-    jobsRepo
+    jobProcessingService
   );
 
   // simulating run

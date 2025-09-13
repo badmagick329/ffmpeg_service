@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { JOB_STATUS } from "@/core/models/job";
+import { JOB_STATUS } from "@/jobs";
 
 const _db = new Database("ffmpeg_service.db");
 const statusValues = Object.values(JOB_STATUS)
@@ -96,11 +96,16 @@ const qFail = _db.query(
                    updated_at=unixepoch() WHERE id=$id`
 );
 
+const qRunning = _db.query(
+  `UPDATE jobs SET status='running', updated_at=unixepoch() WHERE id=$id`
+);
+
 export const jobsManager = {
   enqueue: qEnq,
   claim: qClaim,
   setSuccess: qOk,
   setFail: qFail,
+  setRunning: qRunning,
   updateStatus: qStatusUpdate,
   changeStatusFrom: qStatusUpdateFrom,
   getByInputFile: qGetByInputFile,

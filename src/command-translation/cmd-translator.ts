@@ -1,5 +1,5 @@
-import type { IPathTranslator } from "@/core/translators/path-translator";
-import { ParsedCmd } from "@/core/models/parsed-cmd";
+import type { IPathTranslator } from "@/command-translation/path-translator";
+import { ParsedCmd } from "@/command-translation/parsed-cmd";
 
 export interface ICmdTranslator {
   localizeCmd(cmd: ParsedCmd): ParsedCmd;

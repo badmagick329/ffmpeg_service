@@ -1,6 +1,6 @@
-import type { ICmdTranslator } from "@/core/translators/cmd-translator";
-import { ParsedCmd } from "@/core/models/parsed-cmd";
-import type { IFFmpegCommandRunner } from "@/services/iffmpeg-command-runner";
+import type { ICmdTranslator } from "@/command-translation/cmd-translator";
+import { ParsedCmd } from "@/command-translation/parsed-cmd";
+import type { IFFmpegCommandRunner } from "@/ffmpeg-job-listener/app/iffmpeg-command-runner";
 
 export class FFmpegCommandRunner implements IFFmpegCommandRunner {
   constructor(readonly cmdTranslator: ICmdTranslator) {}

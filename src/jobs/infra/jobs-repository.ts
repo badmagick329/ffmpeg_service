@@ -1,11 +1,16 @@
-import type { IJobsRepository } from "@/core/repositories/ijobs-repository";
-import type { Job, JobStatus } from "@/core/models/job";
+import type { IJobsRepository } from "@/jobs/core/ijobs-repository";
+import type { Job } from "@/jobs/core/job";
+import type { JobStatus } from "@/jobs/core/job-status";
 import { jobsManager } from "@/infra/db";
+import { JOB_STATUS } from "@/jobs";
 
 export class JobsRepository implements IJobsRepository {
   private _enqueue: typeof jobsManager.enqueue;
   private _updateStatus: typeof jobsManager.updateStatus;
   private _changeStatusFrom: typeof jobsManager.changeStatusFrom;
+  private _setSuccess: typeof jobsManager.setSuccess;
+  private _setFail: typeof jobsManager.setFail;
+  private _setRunning: typeof jobsManager.setRunning;
   private _getJobIdWithLocalizedCmd: typeof jobsManager.getJobIdWithLocalizedCmd;
   private _claim: typeof jobsManager.claim;
 
@@ -13,8 +18,34 @@ export class JobsRepository implements IJobsRepository {
     this._enqueue = jobsManager.enqueue;
     this._updateStatus = jobsManager.updateStatus;
     this._changeStatusFrom = jobsManager.changeStatusFrom;
+    this._setSuccess = jobsManager.setSuccess;
+    this._setFail = jobsManager.setFail;
+    this._setRunning = jobsManager.setRunning;
     this._getJobIdWithLocalizedCmd = jobsManager.getJobIdWithLocalizedCmd;
     this._claim = jobsManager.claim;
+  }
+  setJobsPending(inputFile: string): void {
+    this.changeStatusFrom(
+      inputFile,
+      JOB_STATUS.MISSING_INPUT,
+      JOB_STATUS.PENDING
+    );
+  }
+  setJobsMissingInput(inputFile: string): void {
+    this.changeStatusFrom(
+      inputFile,
+      JOB_STATUS.PENDING,
+      JOB_STATUS.MISSING_INPUT
+    );
+  }
+  setSuccess(jobId: number) {
+    this._setSuccess.run({ $id: jobId });
+  }
+  setFail(jobId: number): void {
+    this._setFail.run({ $id: jobId });
+  }
+  setRunning(jobId: number): void {
+    this._setRunning.run({ $id: jobId });
   }
 
   claim(

@@ -1,4 +1,4 @@
-import type { IInputFilesRepository } from "@/core/repositories/iinput-files-repository";
+import type { IInputFilesRepository } from "@/file-ingestion/core/iinput-files-repository";
 import { inputFilesManager } from "@/infra/db";
 import * as path from "node:path";
 
