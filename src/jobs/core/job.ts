@@ -23,11 +23,6 @@ export class Job {
     const cmd = ParsedCmd.create(ffmpegCmd);
     const localizedCmd = cmdTranslator.localizeCmd(cmd);
     const filename = path.basename(localizedCmd.input);
-    return new Job(
-      cmd.cmd,
-      localizedCmd.cmd,
-      filename,
-      JOB_STATUS.MISSING_INPUT
-    );
+    return new Job(cmd.cmd, localizedCmd.cmd, filename, JOB_STATUS.PENDING);
   }
 }

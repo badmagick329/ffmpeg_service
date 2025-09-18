@@ -26,18 +26,14 @@ async function main() {
   });
   const cmdTranslator = new CmdTranslator(pathTranslator);
 
-  startInputFilesWatcher(inputsRepo, jobProcessingService);
-  startFsCommandsWatcher(cmdTranslator, inputsRepo, jobsRepo);
+  startInputFilesWatcher(inputsRepo);
+  startFsCommandsWatcher(cmdTranslator, jobsRepo);
   startFFmpegJobListener(cmdTranslator, jobProcessingService);
 }
 
-function startInputFilesWatcher(
-  inputsRepo: InputFilesRepository,
-  jobProcessingService: JobProcessingService
-) {
+function startInputFilesWatcher(inputsRepo: InputFilesRepository) {
   const watchService = new InputFilesWatchService(
     inputsRepo,
-    jobProcessingService,
     new FsWatcher(config.src)
   );
   console.log(`[Main] - Input watcher is watching: ${config.src}`);
@@ -46,14 +42,9 @@ function startInputFilesWatcher(
 
 function startFsCommandsWatcher(
   cmdTranslator: CmdTranslator,
-  inputsRepo: InputFilesRepository,
   jobsRepo: JobsRepository
 ) {
-  const jobCreationService = new JobCreationService(
-    cmdTranslator,
-    inputsRepo,
-    jobsRepo
-  );
+  const jobCreationService = new JobCreationService(cmdTranslator, jobsRepo);
 
   const fileCommandsWatcher = new FsCommandsWatchService(
     jobCreationService,

@@ -2,7 +2,6 @@ import type { IJobsRepository } from "@/jobs/core/ijobs-repository";
 import type { Job } from "@/jobs/core/job";
 import type { JobStatus } from "@/jobs/core/job-status";
 import { jobsManager } from "@/infra/db";
-import { JOB_STATUS } from "@/jobs";
 
 export class JobsRepository implements IJobsRepository {
   private _enqueue: typeof jobsManager.enqueue;
@@ -23,20 +22,6 @@ export class JobsRepository implements IJobsRepository {
     this._setRunning = jobsManager.setRunning;
     this._getJobIdWithLocalizedCmd = jobsManager.getJobIdWithLocalizedCmd;
     this._claim = jobsManager.claim;
-  }
-  setJobsPending(inputFile: string): void {
-    this.changeStatusFrom(
-      inputFile,
-      JOB_STATUS.MISSING_INPUT,
-      JOB_STATUS.PENDING
-    );
-  }
-  setJobsMissingInput(inputFile: string): void {
-    this.changeStatusFrom(
-      inputFile,
-      JOB_STATUS.PENDING,
-      JOB_STATUS.MISSING_INPUT
-    );
   }
   setSuccess(jobId: number) {
     this._setSuccess.run({ $id: jobId });
@@ -89,17 +74,6 @@ export class JobsRepository implements IJobsRepository {
     this._updateStatus.run({
       $localized_cmd: localizedCmd,
       $status: status,
-    });
-  }
-  changeStatusFrom(
-    inputFile: string,
-    oldStatus: JobStatus,
-    newStatus: JobStatus
-  ): void {
-    this._changeStatusFrom.run({
-      $input_file: inputFile,
-      $old_status: oldStatus,
-      $new_status: newStatus,
     });
   }
 }

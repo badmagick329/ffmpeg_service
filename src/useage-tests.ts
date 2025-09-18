@@ -10,7 +10,6 @@ import {
   FsWatcher,
 } from "@/file-ingestion";
 import {
-  JOB_STATUS,
   JobCreationService,
   JobProcessingService,
   JobsRepository,
@@ -51,30 +50,16 @@ function testJobCreationService() {
     dst: config.dst,
   });
   const cmdTranslator = new CmdTranslator(pathTranslator);
-  const inputRepo = new InputFilesRepository();
   const jobsRepo = new JobsRepository();
-  const jobCreationService = new JobCreationService(
-    cmdTranslator,
-    inputRepo,
-    jobsRepo
-  );
+  const jobCreationService = new JobCreationService(cmdTranslator, jobsRepo);
   // jobCreationService.enqueue(config.sampleCmd);
   jobCreationService.enqueueUnique(config.sampleCmd);
-  // Assuming the input file exists
-  jobsRepo.changeStatusFrom(
-    config.sampleInput,
-    JOB_STATUS.MISSING_INPUT,
-    JOB_STATUS.PENDING
-  );
 }
 
 function testWatcher() {
   const inputsRepo = new InputFilesRepository();
-  const jobsRepo = new JobsRepository();
-  const jobProcessingService = new JobProcessingService(jobsRepo);
   const watchService = new InputFilesWatchService(
     inputsRepo,
-    jobProcessingService,
     new FsWatcher("./data/incoming")
   );
   watchService.start();
@@ -82,28 +67,15 @@ function testWatcher() {
 
 async function testInputChecker() {
   const inputsRepo = new InputFilesRepository();
-  const jobsRepo = new JobsRepository();
 
   const result = inputsRepo.add(config.sampleInput);
   console.log("Added file:", result);
-  if (result) {
-    jobsRepo.changeStatusFrom(
-      result.inputFile,
-      JOB_STATUS.MISSING_INPUT,
-      JOB_STATUS.PENDING
-    );
-  }
   console.log(inputsRepo.exists(config.sampleInput));
   prompt("Press Enter to remove the file...");
   inputsRepo.remove(config.sampleInput);
   console.log(
     "File removed. Exists now?",
     inputsRepo.exists(config.sampleInput)
-  );
-  jobsRepo.changeStatusFrom(
-    config.sampleInput,
-    JOB_STATUS.PENDING,
-    JOB_STATUS.MISSING_INPUT
   );
 }
 

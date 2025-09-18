@@ -19,12 +19,4 @@ export class JobProcessingService {
   setRunning(jobId: number) {
     this.jobsRepo.setRunning(jobId);
   }
-
-  setPending(inputFile: string) {
-    this.jobsRepo.setJobsPending(inputFile);
-  }
-
-  setMissingInput(inputFile: string) {
-    this.jobsRepo.setJobsMissingInput(inputFile);
-  }
 }

@@ -1,12 +1,10 @@
 import type { IFsWatcher } from "@/file-ingestion/core/ifs-watcher";
 import type { IInputFilesRepository } from "@/file-ingestion/core/iinput-files-repository";
-import { JobProcessingService } from "@/jobs";
 import type { Stats } from "fs";
 
 export class InputFilesWatchService {
   constructor(
     private readonly inputsRepo: IInputFilesRepository,
-    private readonly jobProcessingService: JobProcessingService,
     private readonly watcher: IFsWatcher
   ) {}
 
@@ -25,7 +23,6 @@ export class InputFilesWatchService {
       // TODO: Logging/retry
       return;
     }
-    this.jobProcessingService.setPending(filepath);
   };
 
   private onUnlink = (filepath: string, stats?: Stats): void => {
@@ -35,6 +32,5 @@ export class InputFilesWatchService {
       // TODO: Logging/retry
       return;
     }
-    this.jobProcessingService.setMissingInput(filepath);
   };
 }

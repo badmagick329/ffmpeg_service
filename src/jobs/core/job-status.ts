@@ -1,5 +1,4 @@
 export const JOB_STATUS = {
-  MISSING_INPUT: "missing_input",
   PENDING: "pending",
   RUNNING: "running",
   SUCCEEDED: "succeeded",

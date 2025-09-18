@@ -16,11 +16,4 @@ export interface IJobsRepository {
   enqueueUnique(job: Job): { id: number } | null;
   enqueue(job: Job): { id: number } | null;
   updateStatus(inputFile: string, status: JobStatus): void;
-  changeStatusFrom(
-    localizedCmd: string,
-    oldStatus: JobStatus,
-    newStatus: JobStatus
-  ): void;
-  setJobsPending(inputFile: string): void;
-  setJobsMissingInput(inputFile: string): void;
 }

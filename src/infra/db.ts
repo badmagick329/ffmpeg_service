@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   updated_at      INTEGER NOT NULL DEFAULT (unixepoch())
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_status_created ON jobs(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_jobs_lease  ON jobs(lease_until);
 CREATE INDEX IF NOT EXISTS idx_jobs_input_files ON jobs(input_file);
 CREATE TABLE IF NOT EXISTS input_files (
@@ -76,12 +77,24 @@ const qClaim = _db.query(
       locked_by=$wid,
       lease_until=$lease,
       updated_at=unixepoch()
-  WHERE id in (
-  SELECT id FROM jobs
-  WHERE status='pending'
+  WHERE id = (
+    SELECT j.id 
+    FROM jobs j
+    WHERE 
+      EXISTS (
+        SELECT 1 
+        FROM input_files f
+        WHERE f.input_file = j.input_file
+      ) 
+      AND (
+      j.status='pending'
+      OR (j.status='running' AND (j.lease_until IS NULL OR j.lease_until <= $now)))
+    ORDER BY j.created_at
+    LIMIT 1
+  ) 
+  AND (
+    status = 'pending'
     OR (status='running' AND (lease_until IS NULL OR lease_until <= $now))
-  ORDER BY created_at
-  LIMIT 1
   )
   RETURNING id, localized_cmd`
 );

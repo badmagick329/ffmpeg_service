@@ -1,12 +1,10 @@
 import type { ICmdTranslator } from "@/command-translation/cmd-translator";
-import type { IInputFilesRepository } from "@/file-ingestion/core/iinput-files-repository";
 import type { IJobsRepository } from "@/jobs/core/ijobs-repository";
 import { Job } from "@/jobs/core/job";
 
 export class JobCreationService {
   constructor(
     private readonly cmdTranslator: ICmdTranslator,
-    private readonly inputRepo: IInputFilesRepository,
     private readonly jobsRepo: IJobsRepository
   ) {}
 
@@ -46,10 +44,6 @@ export class JobCreationService {
     const job = Job.fromCmd(ffmpegCmd, this.cmdTranslator);
 
     console.log(`[JobCreationService] - Checking if ${job.inputFile} exists`);
-    const exists = this.inputRepo.exists(job.inputFile);
-    if (exists) {
-      job.status = "pending";
-    }
     return job;
   }
 }
