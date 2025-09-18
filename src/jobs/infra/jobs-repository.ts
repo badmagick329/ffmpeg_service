@@ -6,7 +6,6 @@ import { jobsManager } from "@/infra/db";
 export class JobsRepository implements IJobsRepository {
   private _enqueue: typeof jobsManager.enqueue;
   private _updateStatus: typeof jobsManager.updateStatus;
-  private _changeStatusFrom: typeof jobsManager.changeStatusFrom;
   private _setSuccess: typeof jobsManager.setSuccess;
   private _setFail: typeof jobsManager.setFail;
   private _setRunning: typeof jobsManager.setRunning;
@@ -16,7 +15,6 @@ export class JobsRepository implements IJobsRepository {
   constructor() {
     this._enqueue = jobsManager.enqueue;
     this._updateStatus = jobsManager.updateStatus;
-    this._changeStatusFrom = jobsManager.changeStatusFrom;
     this._setSuccess = jobsManager.setSuccess;
     this._setFail = jobsManager.setFail;
     this._setRunning = jobsManager.setRunning;
@@ -33,14 +31,12 @@ export class JobsRepository implements IJobsRepository {
     this._setRunning.run({ $id: jobId });
   }
 
-  claim(
-    wid: number,
-    leaseUntil?: number
-  ): { id: number; localizedCmd: string } | null {
+  claim(): { id: number; localizedCmd: string } | null {
     const now = Date.now();
-    leaseUntil = leaseUntil ?? now + 1000 * 60 * 60 * 3;
+    const leaseUntil = now + 1000 * 60 * 60 * 3;
     const claimed = this._claim.get({
-      $wid: wid,
+      // NOTE: only one worker per app for now
+      $wid: 1,
       $lease: leaseUntil,
       $now: now,
     }) as { id: number; localized_cmd: string } | undefined;

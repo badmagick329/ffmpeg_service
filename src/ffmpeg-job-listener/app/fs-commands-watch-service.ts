@@ -1,5 +1,5 @@
 import type { JobCreationService } from "@/jobs";
-import type { IFsWatcher } from "@/file-ingestion/core/ifs-watcher";
+import type { IFsWatcher } from "@/fs-watcher";
 
 export class FsCommandsWatchService {
   private chain = Promise.resolve();

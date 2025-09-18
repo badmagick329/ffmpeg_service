@@ -1,8 +1,13 @@
-import type { IInputFilesRepository } from "@/file-ingestion/core/iinput-files-repository";
 import { inputFilesManager } from "@/infra/db";
 import * as path from "node:path";
 
-export class InputFilesRepository implements IInputFilesRepository {
+export interface InputFilesRepo {
+  add(inputFile: string): { id: number; inputFile: string } | null;
+  remove(inputFile: string): { id: number; inputFile: string } | null;
+  exists(inputFile: string): boolean;
+}
+
+export class SQLInputFilesRepo implements InputFilesRepo {
   private _add: typeof inputFilesManager.add;
   private _remove: typeof inputFilesManager.remove;
   private _getByInputFile: typeof inputFilesManager.getByInputFile;
@@ -31,6 +36,6 @@ export class InputFilesRepository implements IInputFilesRepository {
     const result = this._getByInputFile.get({
       $input_file: path.basename(inputFile),
     }) as { input_file: string } | undefined;
-    return result?.input_file === inputFile;
+    return !!result;
   }
 }

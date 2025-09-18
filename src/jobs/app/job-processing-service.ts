@@ -4,8 +4,7 @@ export class JobProcessingService {
   constructor(private readonly jobsRepo: IJobsRepository) {}
 
   claim() {
-    // TODO: Remove this ID requirement. we're not going with multiple workers anytime soon
-    return this.jobsRepo.claim(1);
+    return this.jobsRepo.claim();
   }
 
   setSuccess(jobId: number) {

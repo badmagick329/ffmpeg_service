@@ -1,7 +1,7 @@
 import type { ICmdTranslator } from "@/command-translation/cmd-translator";
 import { JobProcessingService } from "@/jobs";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
-import type { IFFmpegCommandRunner } from "@/ffmpeg-job-listener/app/iffmpeg-command-runner";
+import type { IFFmpegCommandRunner } from "@/ffmpeg-job-listener/infra/ffmpeg-command-runner";
 
 export class FFmpegJobListener {
   constructor(
@@ -12,7 +12,6 @@ export class FFmpegJobListener {
 
   async listen() {
     while (true) {
-      // NOTE: Hardcoded worker ID for now
       const job = this.jobProcessingService.claim();
       if (!job) {
         await new Promise((resolve) => setTimeout(resolve, 5000));

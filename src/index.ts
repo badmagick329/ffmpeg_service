@@ -1,10 +1,6 @@
 import { CmdTranslator, PathTranslator } from "@/command-translation";
 import { config } from "@/infra/config";
-import {
-  InputFilesRepository,
-  InputFilesWatchService,
-  FsWatcher,
-} from "@/file-ingestion";
+import { InputFilesRepository, InputFilesWatchService } from "@/file-ingestion";
 import {
   JobCreationService,
   JobProcessingService,
@@ -15,6 +11,7 @@ import {
   FsCommandsWatchService,
   FFmpegJobListener,
 } from "@/ffmpeg-job-listener";
+import { FsWatcher } from "@/fs-watcher";
 
 async function main() {
   const inputsRepo = new InputFilesRepository();

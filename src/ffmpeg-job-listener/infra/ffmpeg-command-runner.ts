@@ -1,6 +1,13 @@
 import type { ICmdTranslator } from "@/command-translation/cmd-translator";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
-import type { IFFmpegCommandRunner } from "@/ffmpeg-job-listener/app/iffmpeg-command-runner";
+
+export interface IFFmpegCommandRunner {
+  run({ cmd, debug }: { cmd: string; debug: boolean }): Promise<{
+    stderr: string;
+    stdout: string;
+    exitCode: number;
+  }>;
+}
 
 export class FFmpegCommandRunner implements IFFmpegCommandRunner {
   constructor(readonly cmdTranslator: ICmdTranslator) {}

@@ -1,11 +1,9 @@
-import { InputFilesWatchService } from "@/file-ingestion/app/input-files-watch-service";
-import { FsWatcher } from "@/file-ingestion/infra/fs-watcher";
+import { InputFilesWatchService } from "@/file-ingestion/input-files-watch-service";
 import { FFmpegJobListener } from "@/ffmpeg-job-listener";
-import { InputFilesRepository } from "@/file-ingestion/infra/input-files-repository";
+import { SQLInputFilesRepo } from "@/file-ingestion/input-files-repo";
 
 export {
   InputFilesWatchService,
-  FsWatcher,
   FFmpegJobListener,
-  InputFilesRepository,
+  SQLInputFilesRepo as InputFilesRepository,
 };

@@ -1,10 +1,10 @@
-import type { IFsWatcher } from "@/file-ingestion/core/ifs-watcher";
-import type { IInputFilesRepository } from "@/file-ingestion/core/iinput-files-repository";
+import type { IFsWatcher } from "@/fs-watcher";
+import type { InputFilesRepo } from "@/file-ingestion/input-files-repo";
 import type { Stats } from "fs";
 
 export class InputFilesWatchService {
   constructor(
-    private readonly inputsRepo: IInputFilesRepository,
+    private readonly inputsRepo: InputFilesRepo,
     private readonly watcher: IFsWatcher
   ) {}
 

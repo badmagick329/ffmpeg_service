@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS jobs (
   created_at      INTEGER NOT NULL DEFAULT (unixepoch()),
   updated_at      INTEGER NOT NULL DEFAULT (unixepoch())
 );
-CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_status_created ON jobs(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_jobs_lease  ON jobs(lease_until);
 CREATE INDEX IF NOT EXISTS idx_jobs_input_files ON jobs(input_file);

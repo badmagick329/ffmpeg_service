@@ -9,7 +9,7 @@ export interface IJobsRepository {
    * @param leaseUntil - Optional timestamp until which the job is leased to the worker. Defaults to 3 hours from now.
    * @returns The claimed job's ID and localized command, or null if no job is available.
    */
-  claim(wid: number): { id: number; localizedCmd: string } | null;
+  claim(): { id: number; localizedCmd: string } | null;
   setSuccess(jobId: number): void;
   setFail(jobId: number): void;
   setRunning(jobId: number): void;

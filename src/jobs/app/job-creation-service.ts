@@ -41,9 +41,6 @@ export class JobCreationService {
     console.log(
       `[JobCreationService] - Creating job for command: ${ffmpegCmd}`
     );
-    const job = Job.fromCmd(ffmpegCmd, this.cmdTranslator);
-
-    console.log(`[JobCreationService] - Checking if ${job.inputFile} exists`);
-    return job;
+    return Job.fromCmd(ffmpegCmd, this.cmdTranslator);
   }
 }
