@@ -4,7 +4,7 @@ import {
   PathTranslator,
 } from "@/command-translation";
 import { config } from "@/infra/config";
-import { InputFilesRepository, InputFilesWatchService } from "@/file-ingestion";
+import { SQLInputFilesRepo, InputFilesWatchService } from "@/file-ingestion";
 import {
   JobCreationService,
   JobProcessingService,
@@ -54,7 +54,7 @@ function testJobCreationService() {
 }
 
 function testWatcher() {
-  const inputsRepo = new InputFilesRepository();
+  const inputsRepo = new SQLInputFilesRepo();
   const watchService = new InputFilesWatchService(
     inputsRepo,
     new FsWatcher("./data/incoming")
@@ -63,7 +63,7 @@ function testWatcher() {
 }
 
 async function testInputChecker() {
-  const inputsRepo = new InputFilesRepository();
+  const inputsRepo = new SQLInputFilesRepo();
 
   const result = inputsRepo.add(config.sampleInput);
   console.log("Added file:", result);

@@ -33,6 +33,11 @@ export class JobsRepository implements IJobsRepository {
 
   claim(): { id: number; localizedCmd: string } | null {
     const now = Date.now();
+    console.log(
+      `[JobsRepository] - [${
+        new Date(now).toISOString().split(".")[0]
+      }] - Attempting claim`
+    );
     const leaseUntil = now + 1000 * 60 * 60 * 3;
     const claimed = this._claim.get({
       // NOTE: only one worker per app for now
@@ -40,6 +45,7 @@ export class JobsRepository implements IJobsRepository {
       $lease: leaseUntil,
       $now: now,
     }) as { id: number; localized_cmd: string } | undefined;
+    console.log("[JobsRepository] - Got claim:", claimed);
     return claimed
       ? { id: claimed.id, localizedCmd: claimed.localized_cmd }
       : null;

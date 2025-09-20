@@ -1,6 +1,6 @@
 import { CmdTranslator, PathTranslator } from "@/command-translation";
 import { config } from "@/infra/config";
-import { InputFilesRepository, InputFilesWatchService } from "@/file-ingestion";
+import { SQLInputFilesRepo, InputFilesWatchService } from "@/file-ingestion";
 import {
   JobCreationService,
   JobProcessingService,
@@ -14,7 +14,7 @@ import {
 import { FsWatcher } from "@/fs-watcher";
 
 async function main() {
-  const inputsRepo = new InputFilesRepository();
+  const inputsRepo = new SQLInputFilesRepo();
   const jobsRepo = new JobsRepository();
   const jobProcessingService = new JobProcessingService(jobsRepo);
   const pathTranslator = new PathTranslator({
@@ -28,7 +28,7 @@ async function main() {
   startFFmpegJobListener(cmdTranslator, jobProcessingService);
 }
 
-function startInputFilesWatcher(inputsRepo: InputFilesRepository) {
+function startInputFilesWatcher(inputsRepo: SQLInputFilesRepo) {
   const watchService = new InputFilesWatchService(
     inputsRepo,
     new FsWatcher(config.src)
