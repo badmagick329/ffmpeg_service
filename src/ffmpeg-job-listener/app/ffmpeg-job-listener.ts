@@ -19,10 +19,15 @@ export class FFmpegJobListener {
       }
       try {
         // TODO: Mark failed ffmpeg conversiosn as failed status
-        await this.run({ cmd: job.localizedCmd, debug: false });
+        const result = await this.run({ cmd: job.localizedCmd, debug: false });
         console.log(
           `[FFmpegJobListener] - Job ${job.id} completed successfully.`
         );
+        if (result.exitCode !== 0) {
+          throw new Error(
+            `FFmpeg command failed with exit code ${result.exitCode}. Stderr: ${result.stderr}`
+          );
+        }
         this.jobProcessingService.setSuccess(job.id);
       } catch (error) {
         console.log(`[FFmpegJobListener] - Job ${job.id} failed: ${error}`);

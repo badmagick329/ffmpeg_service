@@ -37,15 +37,25 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
       };
     }
 
-    console.log("[FFmpegCommandRunner] - Running command", arrayCmd);
-    const proc = Bun.spawn(arrayCmd, {
-      stderr: "pipe",
-      stdout: "pipe",
-    });
-    return {
-      stderr: await new Response(proc.stderr).text(),
-      stdout: await new Response(proc.stdout).text(),
-      exitCode: await proc.exited,
-    };
+    try {
+      console.log("[FFmpegCommandRunner] - Running command", arrayCmd);
+      const proc = Bun.spawn(arrayCmd, {
+        stderr: "pipe",
+        stdout: "pipe",
+      });
+      return {
+        stderr: await new Response(proc.stderr).text(),
+        stdout: await new Response(proc.stdout).text(),
+        exitCode: await proc.exited,
+      };
+    } catch (error) {
+      console.log("[FFmpegCommandRunner] - Encountered Error", error);
+
+      return {
+        stderr: "",
+        stdout: "",
+        exitCode: -1,
+      };
+    }
   }
 }
