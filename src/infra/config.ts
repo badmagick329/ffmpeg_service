@@ -1,13 +1,15 @@
 import conf from "../../config.toml";
 
 type ConfigType = {
-  src: string;
-  dst: string;
+  incomingDir: string;
+  outgoingDir: string;
   cmdsInputDir: string;
+  serverConfigs: { copytTo: string }[];
 };
 
 export const config: ConfigType = {
-  src: conf.src,
-  dst: conf.dst,
+  incomingDir: conf.incomingDir,
+  outgoingDir: conf.outgoingDir,
   cmdsInputDir: conf.cmdsInputDir,
+  serverConfigs: conf.serverConfigs,
 };

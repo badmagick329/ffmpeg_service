@@ -18,8 +18,8 @@ async function main() {
   const jobsRepo = new JobsRepository();
   const jobProcessingService = new JobProcessingService(jobsRepo);
   const pathTranslator = new PathTranslator({
-    src: config.src,
-    dst: config.dst,
+    src: config.incomingDir,
+    dst: config.outgoingDir,
   });
   const cmdTranslator = new CmdTranslator(pathTranslator);
 
@@ -31,10 +31,10 @@ async function main() {
 function startInputFilesWatcher(inputsRepo: SQLInputFilesRepo) {
   const watchService = new InputFilesWatchService(
     inputsRepo,
-    new FsWatcher(config.src),
-    config.src
+    new FsWatcher(config.incomingDir),
+    config.incomingDir
   );
-  console.log(`[Main] - Input watcher is watching: ${config.src}`);
+  console.log(`[Main] - Input watcher is watching: ${config.incomingDir}`);
   watchService.start();
 }
 

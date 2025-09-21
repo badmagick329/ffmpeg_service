@@ -1,4 +1,10 @@
-src = "./data/incoming"
-dst = "./data/outgoing"
+incomingDir = "./data/incoming"
+outgoingDir = "./data/outgoing"
 
 cmdsInputDir = '.\data\cmds'
+
+[serverConfigs]
+[[serverConfigs.server1]]
+copyTo = "/home/username/apps/ffmpeg/work/videos"
+[[serverConfigs.server2]]
+copyTo = "/home/username/stuff/ffmpeg/incoming"
