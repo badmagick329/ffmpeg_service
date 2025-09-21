@@ -1,4 +1,5 @@
 import conf from "../../config.toml";
+import { mkdirSync } from "fs";
 
 type ConfigType = {
   incomingDir: string;
@@ -13,3 +14,7 @@ export const config: ConfigType = {
   cmdsInputDir: conf.cmdsInputDir,
   serverConfigs: conf.serverConfigs,
 };
+
+mkdirSync(config.incomingDir, { recursive: true });
+mkdirSync(config.outgoingDir, { recursive: true });
+mkdirSync(config.cmdsInputDir, { recursive: true });
