@@ -1,6 +1,4 @@
 src = "./data/incoming"
 dst = "./data/outgoing"
 
-sampleCmd = 'ffmpeg -ss 5.38 -y -i "C:\temp\120614 input.mkv" -c:v libx264 -crf 24 -preset slow -c:a copy -vf bwdif=mode=1:parity=auto:deint=1 -t 7.674 "C:\temp\120614 out.mkv"'
-sampleInput = '.\data\incoming\120614 input.mkv'
 cmdsInputDir = '.\data\cmds'
