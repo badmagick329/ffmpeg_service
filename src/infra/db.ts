@@ -27,20 +27,18 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status_created ON jobs(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_jobs_lease  ON jobs(lease_until);
 CREATE INDEX IF NOT EXISTS idx_jobs_input_files ON jobs(input_file);
 CREATE TABLE IF NOT EXISTS input_files (
-  id              INTEGER PRIMARY KEY,
-  input_file      TEXT NOT NULL UNIQUE,
+  input_file      TEXT PRIMARY KEY,
   created_at      INTEGER NOT NULL DEFAULT (unixepoch())
-);
-CREATE INDEX IF NOT EXISTS idx_input_files_input_files  ON input_files(input_file);
+) WITHOUT ROWID;
 `);
 
 const inpAdd = _db.query(
   `INSERT OR IGNORE INTO input_files(input_file)
-  VALUES($input_file) RETURNING id,input_file`
+  VALUES($input_file) RETURNING input_file`
 );
 
 const inpRemove = _db.query(
-  `DELETE FROM input_files WHERE input_file=$input_file RETURNING id,input_file`
+  `DELETE FROM input_files WHERE input_file=$input_file RETURNING input_file`
 );
 const inpListAll = _db.query(`SELECT input_file FROM input_files`);
 const inpGetByInputFile = _db.query(

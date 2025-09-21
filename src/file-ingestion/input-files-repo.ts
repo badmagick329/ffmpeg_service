@@ -2,8 +2,8 @@ import { inputFilesManager } from "@/infra/db";
 import * as path from "node:path";
 
 export interface InputFilesRepo {
-  add(inputFile: string): { id: number; inputFile: string } | null;
-  remove(inputFile: string): { id: number; inputFile: string } | null;
+  add(inputFile: string): { inputFile: string } | null;
+  remove(inputFile: string): { inputFile: string } | null;
   exists(inputFile: string): boolean;
 }
 
@@ -28,8 +28,8 @@ export class SQLInputFilesRepo implements InputFilesRepo {
   remove(inputFile: string) {
     const result = this._remove.get({
       $input_file: path.basename(inputFile),
-    }) as { id: number; input_file: string } | undefined;
-    return result ? { id: result.id, inputFile: result.input_file } : null;
+    }) as { input_file: string } | undefined;
+    return result ? { inputFile: result.input_file } : null;
   }
 
   exists(inputFile: string): boolean {
