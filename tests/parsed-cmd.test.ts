@@ -37,6 +37,18 @@ describe("ParsedCmd.create", () => {
     expect(parsed.output).toBe("./output.mkv");
   });
 
+  it("should parse a command that starts with a potential ffmpeg script wrapper", () => {
+    const cmd =
+      'ffwrapper.sh -i "./input.mkv" -c:v libx264 -crf 24 -preset slow -c:a copy -vf bwdif=mode=1:parity=auto:deint=1 -ss 00:00:05.380 -to 00:00:13.054 "./output.mkv"';
+    const parsed = ParsedCmd.create(cmd);
+    expect(parsed.start).toBe("ffwrapper.sh -y -hide_banner -nostdin -i ");
+    expect(parsed.input).toBe("./input.mkv");
+    expect(parsed.params).toBe(
+      " -c:v libx264 -crf 24 -preset slow -c:a copy -vf bwdif=mode=1:parity=auto:deint=1 -ss 00:00:05.380 -to 00:00:13.054 "
+    );
+    expect(parsed.output).toBe("./output.mkv");
+  });
+
   it("should parse a command with several start parts", () => {
     const cmd =
       'ffmpeg -ss 3445.058 -probesize 100M -analyzeduration 100M -y -i "/home/usr/input.mp4" -c:v libsvtav1 -crf 39 -preset 4 -c:a copy -vf bwdif=mode=1:parity=auto:deint=1  -t 209.493 "/home/usr/output.mp4"';
