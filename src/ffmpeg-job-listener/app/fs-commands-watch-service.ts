@@ -30,7 +30,7 @@ export class FsCommandsWatchService {
     (await Bun.file(filepath).text())
       .split("\n")
       .map((l) => l.trim())
-      .filter((l) => Boolean(l))
+      .filter((l) => Boolean(l) && !l.startsWith("#"))
       .forEach((c) => {
         try {
           this.jobsCreationService.enqueueUnique(c);
