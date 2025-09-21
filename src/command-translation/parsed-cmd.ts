@@ -17,6 +17,13 @@ export class ParsedCmd {
     public readonly output: string
   ) {}
 
+  /**
+   * Creates a ParsedCmd instance from a raw ffmpeg command string.
+   *
+   * @param cmd - The raw ffmpeg command string.
+   * @returns A ParsedCmd instance.
+   * @throws {Error} If the command format is invalid.
+   */
   static create(cmd: string): ParsedCmd {
     const parts = ParsedCmd.getParts(cmd);
 
