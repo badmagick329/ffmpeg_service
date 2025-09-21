@@ -10,6 +10,7 @@ console.log("[DB] - Initializing DB");
 _db.exec(`
 PRAGMA journal_mode=WAL;
 PRAGMA synchronous=NORMAL;
+
 CREATE TABLE IF NOT EXISTS jobs (
   id              INTEGER PRIMARY KEY,
   raw_cmd         TEXT NOT NULL,
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS jobs (
 CREATE INDEX IF NOT EXISTS idx_jobs_status_created ON jobs(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_jobs_lease  ON jobs(lease_until);
 CREATE INDEX IF NOT EXISTS idx_jobs_input_files ON jobs(input_file);
+
 CREATE TABLE IF NOT EXISTS input_files (
   input_file      TEXT PRIMARY KEY,
   created_at      INTEGER NOT NULL DEFAULT (unixepoch())
@@ -40,10 +42,47 @@ const inpAdd = _db.query(
 const inpRemove = _db.query(
   `DELETE FROM input_files WHERE input_file=$input_file RETURNING input_file`
 );
-const inpListAll = _db.query(`SELECT input_file FROM input_files`);
 const inpGetByInputFile = _db.query(
   `SELECT input_file FROM input_files WHERE input_file=$input_file`
 );
+const inpReconcile = (files: string[]) => {
+  _db.exec("BEGIN IMMEDIATE;");
+
+  try {
+    _db.exec("DROP TABLE IF EXISTS temp.scan;");
+    _db.exec(
+      `CREATE TEMP TABLE scan 
+      (
+      input_file TEXT PRIMARY KEY
+      ) WITHOUT ROWID;
+    `
+    );
+
+    const insertScan = _db.prepare(
+      "INSERT INTO scan(input_file) VALUES ($input_file)"
+    );
+    for (const f of files) {
+      insertScan.run({ $input_file: f });
+    }
+
+    _db.exec(`
+      INSERT OR IGNORE INTO input_files(input_file)
+      SELECT input_file FROM scan;
+    `);
+
+    _db.exec(`
+      DELETE FROM input_files
+      WHERE NOT EXISTS (
+        SELECT 1 FROM scan s WHERE s.input_file = input_files.input_file
+      );
+    `);
+
+    _db.exec("COMMIT;");
+  } catch (err) {
+    _db.exec("ROLLBACK;");
+    throw err;
+  }
+};
 
 const qEnq = _db.query(
   `INSERT OR IGNORE INTO jobs(raw_cmd, localized_cmd, input_file, status)
@@ -126,6 +165,6 @@ export const jobsManager = {
 export const inputFilesManager = {
   add: inpAdd,
   remove: inpRemove,
-  listAll: inpListAll,
   getByInputFile: inpGetByInputFile,
+  reconcile: inpReconcile,
 };

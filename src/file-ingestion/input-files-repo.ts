@@ -5,17 +5,20 @@ export interface InputFilesRepo {
   add(inputFile: string): { inputFile: string } | null;
   remove(inputFile: string): { inputFile: string } | null;
   exists(inputFile: string): boolean;
+  reconcileInputFiles(inputFiles: string[]): void;
 }
 
 export class SQLInputFilesRepo implements InputFilesRepo {
   private _add: typeof inputFilesManager.add;
   private _remove: typeof inputFilesManager.remove;
   private _getByInputFile: typeof inputFilesManager.getByInputFile;
+  private _reconcile: typeof inputFilesManager.reconcile;
 
   constructor() {
     this._add = inputFilesManager.add;
     this._remove = inputFilesManager.remove;
     this._getByInputFile = inputFilesManager.getByInputFile;
+    this._reconcile = inputFilesManager.reconcile;
   }
 
   add(inputFile: string) {
@@ -37,5 +40,8 @@ export class SQLInputFilesRepo implements InputFilesRepo {
       $input_file: path.basename(inputFile),
     }) as { input_file: string } | undefined;
     return !!result;
+  }
+  reconcileInputFiles(inputFiles: string[]): void {
+    this._reconcile(inputFiles);
   }
 }

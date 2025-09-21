@@ -31,7 +31,8 @@ async function main() {
 function startInputFilesWatcher(inputsRepo: SQLInputFilesRepo) {
   const watchService = new InputFilesWatchService(
     inputsRepo,
-    new FsWatcher(config.src)
+    new FsWatcher(config.src),
+    config.src
   );
   console.log(`[Main] - Input watcher is watching: ${config.src}`);
   watchService.start();

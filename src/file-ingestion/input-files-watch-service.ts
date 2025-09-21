@@ -1,11 +1,13 @@
 import type { IFsWatcher } from "@/fs-watcher";
 import type { InputFilesRepo } from "@/file-ingestion/input-files-repo";
 import type { Stats } from "fs";
+import * as fs from "node:fs/promises";
 
 export class InputFilesWatchService {
   constructor(
     private readonly inputsRepo: InputFilesRepo,
-    private readonly watcher: IFsWatcher
+    private readonly watcher: IFsWatcher,
+    private readonly inputsDir: string
   ) {}
 
   start() {
@@ -13,7 +15,21 @@ export class InputFilesWatchService {
     this.watcher.onUnlink = this.onUnlink;
     this.watcher.onChange = () => undefined;
 
+    this.bgJobTest();
     this.watcher.watch({});
+  }
+
+  private async bgJobTest() {
+    await this.reconcileInputFiles();
+    while (true) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      console.log(
+        `[${
+          new Date().toISOString().split(".")[0]
+        } - InputFilesWatchService] - Checking input dir list`
+      );
+      await this.reconcileInputFiles();
+    }
   }
 
   private onAdd = (filepath: string, stats?: Stats): void => {
@@ -33,4 +49,16 @@ export class InputFilesWatchService {
       return;
     }
   };
+
+  private async reconcileInputFiles() {
+    try {
+      const inputFilesList = await fs.readdir(this.inputsDir);
+      this.inputsRepo.reconcileInputFiles(inputFilesList);
+    } catch (error) {
+      console.log(
+        "[InputFilesWatchService] - Error reconciling input dir",
+        error
+      );
+    }
+  }
 }
