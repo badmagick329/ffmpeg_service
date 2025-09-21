@@ -7,7 +7,7 @@ type CmdParts = {
 
 export class ParsedCmd {
   private static cmdRegex =
-    /^(?<start>ffmpeg .+?)"(?<input>(.+?))"(?<params>.+?)"(?<output>[^"]+)"$/;
+    /^(?<start>ffmpeg .*-i\s+)"(?<input>(.+?))"(?<params>.+?)"(?<output>[^"]+)"$/;
 
   constructor(
     public readonly cmd: string,
@@ -19,6 +19,15 @@ export class ParsedCmd {
 
   static create(cmd: string): ParsedCmd {
     const parts = ParsedCmd.getParts(cmd);
+
+    const startArgs = parts.start.split(" ").filter((w) => Boolean(w));
+    const newStartArgs = [] as string[];
+    startArgs.includes("-y") || newStartArgs.push("-y");
+    startArgs.includes("-hide_banner") || newStartArgs.push("-hide_banner");
+    startArgs.includes("-nostdin") || newStartArgs.push("-nostdin");
+    startArgs.splice(startArgs.length - 1, 0, ...newStartArgs);
+    parts.start = startArgs.join(" ") + " ";
+
     return { cmd, ...parts };
   }
 
