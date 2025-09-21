@@ -15,14 +15,14 @@ export class InputFilesWatchService {
     this.watcher.onUnlink = this.onUnlink;
     this.watcher.onChange = () => undefined;
 
-    this.bgJobTest();
+    this.monitorInputFiles();
     this.watcher.watch({});
   }
 
-  private async bgJobTest() {
+  private async monitorInputFiles() {
     await this.reconcileInputFiles();
     while (true) {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
       console.log(
         `[${
           new Date().toISOString().split(".")[0]

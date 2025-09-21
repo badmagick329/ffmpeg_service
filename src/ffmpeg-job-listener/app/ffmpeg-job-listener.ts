@@ -14,7 +14,7 @@ export class FFmpegJobListener {
     while (true) {
       const job = this.jobProcessingService.claim();
       if (!job) {
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 10000));
         continue;
       }
       try {
