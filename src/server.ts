@@ -1,5 +1,5 @@
 import { CmdTranslator, PathTranslator } from "@/command-translation";
-import { config } from "@/infra/config";
+import { config, initDirectories } from "@/infra/config";
 import { SQLInputFilesRepo, InputFilesWatchService } from "@/file-ingestion";
 import {
   JobCreationService,
@@ -14,6 +14,8 @@ import {
 import { FsWatcher } from "@/fs-watcher";
 
 async function main() {
+  initDirectories();
+
   const inputsRepo = new SQLInputFilesRepo();
   const jobsRepo = new JobsRepository();
   const jobProcessingService = new JobProcessingService(jobsRepo);

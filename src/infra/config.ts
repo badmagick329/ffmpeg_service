@@ -5,7 +5,7 @@ type ConfigType = {
   incomingDir: string;
   outgoingDir: string;
   cmdsInputDir: string;
-  serverConfigs: { copytTo: string }[];
+  serverConfigs: { copyTo: string }[];
 };
 
 export const config: ConfigType = {
@@ -15,6 +15,8 @@ export const config: ConfigType = {
   serverConfigs: conf.serverConfigs,
 };
 
-mkdirSync(config.incomingDir, { recursive: true });
-mkdirSync(config.outgoingDir, { recursive: true });
-mkdirSync(config.cmdsInputDir, { recursive: true });
+export function initDirectories() {
+  mkdirSync(config.incomingDir, { recursive: true });
+  mkdirSync(config.outgoingDir, { recursive: true });
+  mkdirSync(config.cmdsInputDir, { recursive: true });
+}
