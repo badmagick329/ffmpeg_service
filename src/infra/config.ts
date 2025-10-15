@@ -7,6 +7,7 @@ type ConfigType = {
   outgoingDir: string;
   cmdsInputDir: string;
   jobPollInterval: number;
+  inputFilesReconciliationInterval: number;
   logConfig: LogConfig;
   serverConfigs: { copyTo: string }[];
 };
@@ -16,6 +17,7 @@ export const config: ConfigType = {
   outgoingDir: conf.outgoingDir,
   cmdsInputDir: conf.cmdsInputDir,
   jobPollInterval: conf.jobPollInterval,
+  inputFilesReconciliationInterval: conf.inputFilesReconciliationInterval,
   logConfig: conf.logConfig,
   serverConfigs: conf.serverConfigs,
 };

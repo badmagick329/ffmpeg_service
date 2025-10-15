@@ -31,7 +31,7 @@ async function main() {
   });
   const cmdTranslator = new CmdTranslator(pathTranslator);
 
-  startInputFilesWatcher(inputsRepo);
+  startInputFilesWatcher(inputsRepo, config.inputFilesReconciliationInterval);
   startFsCommandsWatcher(cmdTranslator, jobsRepo);
   startFFmpegJobListener(
     cmdTranslator,
@@ -42,11 +42,15 @@ async function main() {
   mainLogger.info("ffmpeg service started.");
 }
 
-function startInputFilesWatcher(inputsRepo: SQLInputFilesRepo) {
+function startInputFilesWatcher(
+  inputsRepo: SQLInputFilesRepo,
+  reconciliationInterval: number
+) {
   const watchService = new InputFilesWatchService(
     inputsRepo,
     new FsWatcher(config.incomingDir),
     config.incomingDir,
+    reconciliationInterval,
     logger
   );
   mainLogger.info("Starting input files watcher", {

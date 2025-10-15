@@ -10,8 +10,15 @@ export class InputFilesWatchService {
     private readonly inputsRepo: InputFilesRepo,
     private readonly watcher: IFsWatcher,
     private readonly inputsDir: string,
+    private readonly reconciliationInterval: number,
     logger: LoggerPort
   ) {
+    if (
+      typeof reconciliationInterval !== "number" ||
+      reconciliationInterval <= 0
+    ) {
+      throw new Error("reconciliationInterval must be a positive number");
+    }
     this.log = logger.withContext({ service: "InputFilesWatchService" });
   }
 
@@ -27,7 +34,9 @@ export class InputFilesWatchService {
   private async monitorInputFiles() {
     await this.reconcileInputFiles();
     while (true) {
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.reconciliationInterval)
+      );
       this.log.info("Checking input dir list");
       await this.reconcileInputFiles();
     }
