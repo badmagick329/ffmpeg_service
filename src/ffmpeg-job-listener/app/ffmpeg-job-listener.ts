@@ -10,16 +10,20 @@ export class FFmpegJobListener {
     private readonly runner: IFFmpegCommandRunner,
     private readonly cmdTranslator: ICmdTranslator,
     private readonly jobProcessingService: JobProcessingService,
+    private readonly pollInterval: number,
     logger: LoggerPort
   ) {
     this.log = logger.withContext({ service: "FFmpegJobListener" });
   }
 
   async listen() {
+    this.log.info("Starting FFmpeg job listener", {
+      pollInterval: this.pollInterval,
+    });
     while (true) {
       const job = this.jobProcessingService.claim();
       if (!job) {
-        await new Promise((resolve) => setTimeout(resolve, 10000));
+        await new Promise((resolve) => setTimeout(resolve, this.pollInterval));
         continue;
       }
       try {

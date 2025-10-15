@@ -33,7 +33,11 @@ async function main() {
 
   startInputFilesWatcher(inputsRepo);
   startFsCommandsWatcher(cmdTranslator, jobsRepo);
-  startFFmpegJobListener(cmdTranslator, jobProcessingService);
+  startFFmpegJobListener(
+    cmdTranslator,
+    jobProcessingService,
+    config.jobPollInterval
+  );
   console.log("[Main] - ffmpeg service started.");
   mainLogger.info("ffmpeg service started.");
 }
@@ -74,13 +78,15 @@ function startFsCommandsWatcher(
 
 function startFFmpegJobListener(
   cmdTranslator: CmdTranslator,
-  jobProcessingService: JobProcessingService
+  jobProcessingService: JobProcessingService,
+  pollInterval: number
 ) {
   const cmdRunner = new FFmpegCommandRunner(cmdTranslator, logger);
   const ffmpegJobListener = new FFmpegJobListener(
     cmdRunner,
     cmdTranslator,
     jobProcessingService,
+    pollInterval,
     logger
   );
   ffmpegJobListener.listen();

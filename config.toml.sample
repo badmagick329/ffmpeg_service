@@ -2,6 +2,7 @@ incomingDir = "./data/incoming"
 outgoingDir = "./data/outgoing"
 
 cmdsInputDir = '.\data\cmds'
+jobPollInterval = 10000
 
 [logConfig]
 logLevel = 'info'
