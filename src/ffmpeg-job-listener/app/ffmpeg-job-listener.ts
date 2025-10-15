@@ -2,13 +2,18 @@ import type { ICmdTranslator } from "@/command-translation/cmd-translator";
 import { JobProcessingService } from "@/jobs";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import type { IFFmpegCommandRunner } from "@/ffmpeg-job-listener/infra/ffmpeg-command-runner";
+import type { LoggerPort } from "@/common/logger-port";
 
 export class FFmpegJobListener {
+  private readonly log: LoggerPort;
   constructor(
     private readonly runner: IFFmpegCommandRunner,
     private readonly cmdTranslator: ICmdTranslator,
-    private readonly jobProcessingService: JobProcessingService
-  ) {}
+    private readonly jobProcessingService: JobProcessingService,
+    logger: LoggerPort
+  ) {
+    this.log = logger.withContext({ service: "FFmpegJobListener" });
+  }
 
   async listen() {
     while (true) {
@@ -19,9 +24,7 @@ export class FFmpegJobListener {
       }
       try {
         const result = await this.run({ cmd: job.localizedCmd, debug: false });
-        console.log(
-          `[FFmpegJobListener] - Job ${job.id} completed successfully.`
-        );
+        this.log.info(`Job ${job.id} completed successfully.`, { result });
         if (result.exitCode !== 0) {
           throw new Error(
             `FFmpeg command failed with exit code ${result.exitCode}. Stderr: ${result.stderr}`
@@ -29,7 +32,7 @@ export class FFmpegJobListener {
         }
         this.jobProcessingService.setSuccess(job.id);
       } catch (error) {
-        console.log(`[FFmpegJobListener] - Job ${job.id} failed: ${error}`);
+        this.log.error(`Job ${job.id} failed: ${error}`);
         this.jobProcessingService.setFail(job.id);
       }
     }

@@ -38,7 +38,7 @@ export class JobsRepository implements IJobsRepository {
 
   claim(): { id: number; localizedCmd: string } | null {
     const now = Date.now();
-    this.log.info("Attempting to claim a job", { now });
+    this.log.info("Attempting to claim a job");
     const leaseUntil = now + 1000 * 60 * 60 * 3;
     const claimed = this._claim.get({
       // NOTE: only one worker per app for now

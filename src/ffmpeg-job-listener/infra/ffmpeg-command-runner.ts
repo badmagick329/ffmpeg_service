@@ -1,5 +1,6 @@
 import type { ICmdTranslator } from "@/command-translation/cmd-translator";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
+import type { LoggerPort } from "@/common/logger-port";
 
 export interface IFFmpegCommandRunner {
   run({ cmd, debug }: { cmd: string; debug: boolean }): Promise<{
@@ -10,7 +11,10 @@ export interface IFFmpegCommandRunner {
 }
 
 export class FFmpegCommandRunner implements IFFmpegCommandRunner {
-  constructor(readonly cmdTranslator: ICmdTranslator) {}
+  private readonly log: LoggerPort;
+  constructor(readonly cmdTranslator: ICmdTranslator, logger: LoggerPort) {
+    this.log = logger.withContext({ service: "FFmpegCommandRunner" });
+  }
 
   /**
    * @param cmd - The command to run, e.g. 'ffmpeg -y -i "./input.mkv" -c:v libx264 -crf 24 -preset slow -c:a copy -vf bwdif=mode=1:parity=auto:deint=1 -ss 00:00:05.380 -to 00:00:13.054 "./output.mkv"'
@@ -26,10 +30,7 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
     const parsed = ParsedCmd.create(cmd);
     const arrayCmd = this.cmdTranslator.cmdToArray(parsed);
     if (debug) {
-      console.log(
-        "[FFmpegCommandRunner] - Running command in debug:",
-        arrayCmd
-      );
+      this.log.info("Running command in debug:", { cmd: arrayCmd });
       return {
         exitCode: 0,
         stderr: "Debug mode: Command not executed",
@@ -38,7 +39,7 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
     }
 
     try {
-      console.log("[FFmpegCommandRunner] - Running command", arrayCmd);
+      this.log.info("Running command:", { cmd: arrayCmd });
       const proc = Bun.spawn(arrayCmd, {
         stderr: "pipe",
         stdout: "pipe",
@@ -49,7 +50,7 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
         exitCode: await proc.exited,
       };
     } catch (error) {
-      console.log("[FFmpegCommandRunner] - Encountered Error", error);
+      this.log.error("Encountered Error", { error });
 
       return {
         stderr: "",

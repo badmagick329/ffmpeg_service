@@ -1,13 +1,18 @@
 import type { JobCreationService } from "@/jobs";
 import type { IFsWatcher } from "@/fs-watcher";
+import type { LoggerPort } from "@/common/logger-port";
 
 export class FsCommandsWatchService {
   private chain = Promise.resolve();
+  private readonly log: LoggerPort;
 
   constructor(
     private readonly jobsCreationService: JobCreationService,
-    private readonly watcher: IFsWatcher
-  ) {}
+    private readonly watcher: IFsWatcher,
+    logger: LoggerPort
+  ) {
+    this.log = logger.withContext({ service: "FsCommandsWatchService" });
+  }
 
   start() {
     this.watcher.onAdd = this.onChange;
@@ -18,7 +23,7 @@ export class FsCommandsWatchService {
   }
 
   private onChange = (filepath: string): void => {
-    console.log(`[FsCommandsWatchService] - File changed: ${filepath}`);
+    this.log.info(`File changed: ${filepath}`);
     this.chain = this.chain
       .then(() => this.handleFileUpdate(filepath))
       .catch((err) => {

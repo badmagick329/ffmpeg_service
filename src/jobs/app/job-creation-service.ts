@@ -1,12 +1,17 @@
 import type { ICmdTranslator } from "@/command-translation/cmd-translator";
+import type { LoggerPort } from "@/common/logger-port";
 import type { IJobsRepository } from "@/jobs/core/ijobs-repository";
 import { Job } from "@/jobs/core/job";
 
 export class JobCreationService {
+  private readonly log: LoggerPort;
   constructor(
     private readonly cmdTranslator: ICmdTranslator,
-    private readonly jobsRepo: IJobsRepository
-  ) {}
+    private readonly jobsRepo: IJobsRepository,
+    logger: LoggerPort
+  ) {
+    this.log = logger.withContext({ service: "JobCreationService" });
+  }
 
   /**
    * Enqueues a unique job for processing. If a job with the same localized command
@@ -21,17 +26,15 @@ export class JobCreationService {
     try {
       job = this.createJob(ffmpegCmd);
     } catch (error) {
-      console.log(`[JobCreationService] - Failed to create job: ${error}`);
+      this.log.error("Failed to create job:", { error });
       return null;
     }
     const result = this.jobsRepo.enqueueUnique(job);
     if (result) {
-      console.log(
-        `[JobCreationService] - Enqueued unique job with ID: ${result.id}`
-      );
+      this.log.info("Enqueued unique job with ID:", { jobId: result.id });
     } else {
-      console.log(
-        `[JobCreationService] - Job with the same localized command already exists. Skipping enqueue.`
+      this.log.warn(
+        "Job with the same localized command already exists. Skipping enqueue."
       );
     }
     return result;
@@ -54,9 +57,7 @@ export class JobCreationService {
    * @throws {Error} If the ffmpeg command is invalid.
    */
   private createJob(ffmpegCmd: string): Job {
-    console.log(
-      `[JobCreationService] - Attempting to create job for command: ${ffmpegCmd}`
-    );
+    this.log.info("Attempting to create job for command:", { ffmpegCmd });
     return Job.fromCmd(ffmpegCmd, this.cmdTranslator);
   }
 }

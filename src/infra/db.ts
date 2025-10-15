@@ -6,7 +6,6 @@ const statusValues = Object.values(JOB_STATUS)
   .map((s) => `'${s}'`)
   .join(",");
 
-console.log("[DB] - Initializing DB");
 _db.exec(`
 PRAGMA journal_mode=WAL;
 PRAGMA synchronous=NORMAL;
