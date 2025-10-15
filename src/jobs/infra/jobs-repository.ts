@@ -2,17 +2,20 @@ import type { IJobsRepository } from "@/jobs/core/ijobs-repository";
 import type { Job } from "@/jobs/core/job";
 import type { JobStatus } from "@/jobs/core/job-status";
 import { jobsManager } from "@/infra/db";
+import type { LoggerPort } from "@/common/logger-port";
 
 export class JobsRepository implements IJobsRepository {
-  private _enqueue: typeof jobsManager.enqueue;
-  private _updateStatus: typeof jobsManager.updateStatus;
-  private _setSuccess: typeof jobsManager.setSuccess;
-  private _setFail: typeof jobsManager.setFail;
-  private _setRunning: typeof jobsManager.setRunning;
-  private _getJobIdWithLocalizedCmd: typeof jobsManager.getJobIdWithLocalizedCmd;
-  private _claim: typeof jobsManager.claim;
+  private readonly _enqueue: typeof jobsManager.enqueue;
+  private readonly _updateStatus: typeof jobsManager.updateStatus;
+  private readonly _setSuccess: typeof jobsManager.setSuccess;
+  private readonly _setFail: typeof jobsManager.setFail;
+  private readonly _setRunning: typeof jobsManager.setRunning;
+  private readonly _getJobIdWithLocalizedCmd: typeof jobsManager.getJobIdWithLocalizedCmd;
+  private readonly _claim: typeof jobsManager.claim;
 
-  constructor() {
+  private readonly log: LoggerPort;
+
+  constructor(logger: LoggerPort) {
     this._enqueue = jobsManager.enqueue;
     this._updateStatus = jobsManager.updateStatus;
     this._setSuccess = jobsManager.setSuccess;
@@ -20,6 +23,8 @@ export class JobsRepository implements IJobsRepository {
     this._setRunning = jobsManager.setRunning;
     this._getJobIdWithLocalizedCmd = jobsManager.getJobIdWithLocalizedCmd;
     this._claim = jobsManager.claim;
+
+    this.log = logger.withContext({ service: "JobsRepository" });
   }
   setSuccess(jobId: number) {
     this._setSuccess.run({ $id: jobId });
@@ -33,11 +38,7 @@ export class JobsRepository implements IJobsRepository {
 
   claim(): { id: number; localizedCmd: string } | null {
     const now = Date.now();
-    console.log(
-      `[JobsRepository] - [${
-        new Date(now).toISOString().split(".")[0]
-      }] - Attempting claim`
-    );
+    this.log.info("Attempting to claim a job", { now });
     const leaseUntil = now + 1000 * 60 * 60 * 3;
     const claimed = this._claim.get({
       // NOTE: only one worker per app for now
@@ -45,7 +46,9 @@ export class JobsRepository implements IJobsRepository {
       $lease: leaseUntil,
       $now: now,
     }) as { id: number; localized_cmd: string } | undefined;
-    console.log("[JobsRepository] - Got claim:", claimed);
+    if (claimed) {
+      this.log.info("Claimed job", { jobId: claimed.id, leaseUntil });
+    }
     return claimed
       ? { id: claimed.id, localizedCmd: claimed.localized_cmd }
       : null;

@@ -1,3 +1,4 @@
+import type { LogConfig } from "@/common/logger-port";
 import conf from "../../config.toml";
 import { mkdirSync } from "fs";
 
@@ -5,6 +6,7 @@ type ConfigType = {
   incomingDir: string;
   outgoingDir: string;
   cmdsInputDir: string;
+  logConfig: LogConfig;
   serverConfigs: { copyTo: string }[];
 };
 
@@ -12,6 +14,7 @@ export const config: ConfigType = {
   incomingDir: conf.incomingDir,
   outgoingDir: conf.outgoingDir,
   cmdsInputDir: conf.cmdsInputDir,
+  logConfig: conf.logConfig,
   serverConfigs: conf.serverConfigs,
 };
 

@@ -3,6 +3,10 @@ outgoingDir = "./data/outgoing"
 
 cmdsInputDir = '.\data\cmds'
 
+[logConfig]
+logLevel = 'info'
+logDir = './logs'
+
 [serverConfigs]
 [[serverConfigs.server1]]
 copyTo = "/home/username/apps/ffmpeg/work/videos"

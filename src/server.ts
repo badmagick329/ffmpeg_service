@@ -12,12 +12,14 @@ import {
   FFmpegJobListener,
 } from "@/ffmpeg-job-listener";
 import { FsWatcher } from "@/fs-watcher";
+import { WinstonLogger } from "@/infra/winston-logger";
 
 async function main() {
+  const logger = new WinstonLogger(config.logConfig);
   initDirectories();
 
   const inputsRepo = new SQLInputFilesRepo();
-  const jobsRepo = new JobsRepository();
+  const jobsRepo = new JobsRepository(logger);
   const jobProcessingService = new JobProcessingService(jobsRepo);
   const pathTranslator = new PathTranslator({
     src: config.incomingDir,

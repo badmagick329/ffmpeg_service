@@ -37,3 +37,4 @@ config.toml
 *.db*
 .ignore/
 data/
+logs/
