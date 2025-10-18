@@ -13,17 +13,18 @@ import {
 } from "@/ffmpeg-job-listener";
 import { FsWatcher } from "@/fs-watcher";
 import { WinstonLogger } from "@/infra/winston-logger";
+import { AppState } from "@/tui/app-state";
+import { start } from "@/tui/ui";
 
-const logger = new WinstonLogger(config.logConfig);
+const appState = new AppState();
+const logger = new WinstonLogger(config.logConfig, {}, appState);
 const mainLogger = logger.withContext({ service: "Main" });
 
 async function main() {
-  console.log("[Main] - Starting ffmpeg service...");
   mainLogger.info("Starting ffmpeg service...");
   initDirectories();
-
   const inputsRepo = new SQLInputFilesRepo();
-  const jobsRepo = new JobsRepository(logger);
+  const jobsRepo = new JobsRepository(appState, logger);
   const jobProcessingService = new JobProcessingService(jobsRepo);
   const pathTranslator = new PathTranslator({
     src: config.incomingDir,
@@ -38,7 +39,8 @@ async function main() {
     jobProcessingService,
     config.jobPollInterval
   );
-  console.log("[Main] - ffmpeg service started.");
+  start(appState);
+
   mainLogger.info("ffmpeg service started.");
 }
 
@@ -85,7 +87,7 @@ function startFFmpegJobListener(
   jobProcessingService: JobProcessingService,
   pollInterval: number
 ) {
-  const cmdRunner = new FFmpegCommandRunner(cmdTranslator, logger);
+  const cmdRunner = new FFmpegCommandRunner(cmdTranslator, appState, logger);
   const ffmpegJobListener = new FFmpegJobListener(
     cmdRunner,
     cmdTranslator,

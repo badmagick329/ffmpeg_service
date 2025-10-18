@@ -6,13 +6,21 @@ import type {
   LoggerFields,
   LoggerPort,
 } from "../common/logger-port";
+import { AppStateTransport } from "./app-state-transport";
+import type { AppState } from "@/tui/app-state";
 
 export class WinstonLogger implements LoggerPort {
   private readonly logger: WinstonCore;
   private readonly logConfig: LogConfig;
+  private readonly appState?: AppState;
 
-  constructor(logConfig: LogConfig, baseFields: LoggerFields = {}) {
+  constructor(
+    logConfig: LogConfig,
+    baseFields: LoggerFields = {},
+    appState?: AppState
+  ) {
     this.logConfig = logConfig;
+    this.appState = appState;
 
     const rotateTransport = new DailyRotateFile({
       dirname: this.logConfig.logDir,
@@ -23,6 +31,18 @@ export class WinstonLogger implements LoggerPort {
       maxFiles: "14d",
       level: this.logConfig.logLevel,
     });
+
+    // Build the transports array
+    const transports: any[] = [rotateTransport];
+
+    // Add AppState transport if provided (for TUI)
+    if (appState) {
+      transports.push(
+        new AppStateTransport(appState, {
+          level: this.logConfig.logLevel,
+        })
+      );
+    }
 
     // const consoleTransport = new transports.Console({
     //   level: this.logConfig.logLevel,
@@ -36,8 +56,7 @@ export class WinstonLogger implements LoggerPort {
         format.splat(), // printf-style %s interpolation
         format.json()
       ),
-      // transports: [consoleTransport, rotateTransport],
-      transports: [rotateTransport],
+      transports,
     });
   }
 
@@ -61,7 +80,7 @@ export class WinstonLogger implements LoggerPort {
   withContext(fields: LoggerFields): LoggerPort {
     // Create a child logger that carries extra fields on every message
     const child = this.logger.child(fields);
-    const wrapper = new WinstonLogger(this.logConfig);
+    const wrapper = new WinstonLogger(this.logConfig, {}, this.appState);
     (wrapper as any).logger = child; // reuse same adapter shape
     return wrapper;
   }

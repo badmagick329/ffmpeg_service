@@ -1,6 +1,8 @@
 import type { ICmdTranslator } from "@/command-translation/cmd-translator";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import type { LoggerPort } from "@/common/logger-port";
+import { JOB_STATUS } from "@/jobs";
+import type { AppState } from "@/tui/app-state";
 
 export interface IFFmpegCommandRunner {
   run({ cmd, debug }: { cmd: string; debug: boolean }): Promise<{
@@ -11,8 +13,15 @@ export interface IFFmpegCommandRunner {
 }
 
 export class FFmpegCommandRunner implements IFFmpegCommandRunner {
+  private readonly appState: AppState;
   private readonly log: LoggerPort;
-  constructor(readonly cmdTranslator: ICmdTranslator, logger: LoggerPort) {
+
+  constructor(
+    readonly cmdTranslator: ICmdTranslator,
+    appState: AppState,
+    logger: LoggerPort
+  ) {
+    this.appState = appState;
     this.log = logger.withContext({ service: "FFmpegCommandRunner" });
   }
 
@@ -44,13 +53,22 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
         stderr: "pipe",
         stdout: "pipe",
       });
+      this.appState.startJob();
+      const errResponse = await new Response(proc.stderr).text();
+      const outResponse = await new Response(proc.stdout).text();
+      const exitCode = await proc.exited;
+      this.appState.updateJobStatus(
+        cmd,
+        exitCode === 0 ? JOB_STATUS.SUCCEEDED : JOB_STATUS.FAILED
+      );
       return {
-        stderr: await new Response(proc.stderr).text(),
-        stdout: await new Response(proc.stdout).text(),
-        exitCode: await proc.exited,
+        stderr: errResponse,
+        stdout: outResponse,
+        exitCode: exitCode,
       };
     } catch (error) {
       this.log.error("Encountered Error", { error });
+      this.appState.updateJobStatus(cmd, JOB_STATUS.FAILED);
 
       return {
         stderr: "",

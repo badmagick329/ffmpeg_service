@@ -15,5 +15,4 @@ export interface IJobsRepository {
   setRunning(jobId: number): void;
   enqueueUnique(job: Job): { id: number } | null;
   enqueue(job: Job): { id: number } | null;
-  updateStatus(inputFile: string, status: JobStatus): void;
 }

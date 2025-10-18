@@ -155,7 +155,6 @@ export const jobsManager = {
   setSuccess: qOk,
   setFail: qFail,
   setRunning: qRunning,
-  updateStatus: qStatusUpdate,
   changeStatusFrom: qStatusUpdateFrom,
   getByInputFile: qGetByInputFile,
   getJobIdWithLocalizedCmd: qGetJobIdWithLocalizedCmd,
