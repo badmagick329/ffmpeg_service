@@ -3,6 +3,7 @@ import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
 import JobDisplay from "@/tui/components/JobDisplay";
 import RecentEvents from "@/tui/components/RecentEvents";
+import JobStatusCount from "@/tui/components/JobStatusCount";
 
 export default function Main({ appState }: { appState: AppState }) {
   const [state, setState] = useState(appState.getState());
@@ -18,6 +19,7 @@ export default function Main({ appState }: { appState: AppState }) {
   return (
     <Box flexDirection="column" gap={1}>
       <RecentEvents appEvents={state.recentEvents} />
+      <JobStatusCount statusCount={state.statusCount} />
       <CurrentJob job={state.currentJob} />
       <LastAddedJob job={state.lastAddedJob} />
     </Box>

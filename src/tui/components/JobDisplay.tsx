@@ -2,6 +2,7 @@ import { JOB_STATUS } from "@/jobs";
 import type { JobInfo } from "@/tui/app-state";
 import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
+import { getJobStatusColor } from "@/tui/lib/job-status-color";
 
 export default function JobDisplay({ job }: { job: JobInfo }) {
   const [timeDelta, setTimeDelta] = useState("");
@@ -23,7 +24,7 @@ export default function JobDisplay({ job }: { job: JobInfo }) {
       <Box gap={1}>
         <Text bold>Status</Text>
         <Text>-</Text>
-        <Text bold color={statusColor(job.status)}>
+        <Text bold color={getJobStatusColor(job.status)}>
           {job.status}
         </Text>
       </Box>
@@ -45,19 +46,4 @@ function humanReadableTimeDelta(startTime: number): string {
   }
 
   return `less than a min ago`;
-}
-
-function statusColor(status: string): string {
-  switch (status) {
-    case JOB_STATUS.RUNNING:
-      return "blue";
-    case JOB_STATUS.PENDING:
-      return "yellow";
-    case JOB_STATUS.SUCCEEDED:
-      return "green";
-    case JOB_STATUS.FAILED:
-      return "red";
-    default:
-      return "white";
-  }
 }
