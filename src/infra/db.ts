@@ -88,10 +88,6 @@ const qEnq = _db.query(
   VALUES($raw_cmd, $localized_cmd, $input_file, $status) RETURNING id`
 );
 
-const qStatusUpdate = _db.query(
-  `UPDATE jobs SET status=$status, updated_at=unixepoch() WHERE localized_cmd=$localized_cmd`
-);
-
 const qStatusUpdateFrom = _db.query(
   `UPDATE jobs SET status=$new_status, updated_at=unixepoch()
    WHERE input_file=$input_file AND status=$old_status`
@@ -107,14 +103,8 @@ const qGetByInputFile = _db.query(
 
 const qClaim = _db.query(
   `
-  UPDATE jobs
-    SET status='${JOB_STATUS.RUNNING}',
-      attempts = attempts + 1,
-      locked_by=$wid,
-      lease_until=$lease,
-      updated_at=unixepoch()
-  WHERE id = (
-    SELECT j.id 
+  WITH selected_job AS (
+    SELECT j.id, j.status as old_status, j.localized_cmd
     FROM jobs j
     WHERE 
       EXISTS (
@@ -127,12 +117,19 @@ const qClaim = _db.query(
       OR (j.status='${JOB_STATUS.RUNNING}' AND (j.lease_until IS NULL OR j.lease_until <= $now)))
     ORDER BY j.created_at
     LIMIT 1
-  ) 
+  )
+  UPDATE jobs
+    SET status='${JOB_STATUS.RUNNING}',
+      attempts = attempts + 1,
+      locked_by=$wid,
+      lease_until=$lease,
+      updated_at=unixepoch()
+  WHERE id = (SELECT id FROM selected_job)
   AND (
     status = '${JOB_STATUS.PENDING}'
     OR (status='${JOB_STATUS.RUNNING}' AND (lease_until IS NULL OR lease_until <= $now))
   )
-  RETURNING id, localized_cmd`
+  RETURNING id, localized_cmd, (SELECT old_status FROM selected_job) as old_status`
 );
 
 const qOk = _db.query(
@@ -149,6 +146,10 @@ const qRunning = _db.query(
   `UPDATE jobs SET status='${JOB_STATUS.RUNNING}', updated_at=unixepoch() WHERE id=$id`
 );
 
+const qStatusCount = _db.query(
+  `SELECT status, COUNT(*) as count FROM jobs GROUP BY status`
+);
+
 export const jobsManager = {
   enqueue: qEnq,
   claim: qClaim,
@@ -158,6 +159,7 @@ export const jobsManager = {
   changeStatusFrom: qStatusUpdateFrom,
   getByInputFile: qGetByInputFile,
   getJobIdWithLocalizedCmd: qGetJobIdWithLocalizedCmd,
+  getStatusCount: qStatusCount,
 };
 
 export const inputFilesManager = {

@@ -1,7 +1,8 @@
 import type { ICmdTranslator } from "@/command-translation/cmd-translator";
 import type { LoggerPort } from "@/common/logger-port";
 import type { IJobsRepository } from "@/jobs/core/ijobs-repository";
-import { Job } from "@/jobs/core/job";
+import { Job } from "@/jobs";
+import type { NewJob } from "@/jobs";
 
 export class JobCreationService {
   private readonly log: LoggerPort;
@@ -22,7 +23,7 @@ export class JobCreationService {
    * @throws {Error} If the ffmpeg command is invalid.
    */
   enqueueUnique(ffmpegCmd: string) {
-    let job: Job;
+    let job: NewJob;
     try {
       job = this.createJob(ffmpegCmd);
     } catch (error) {
@@ -43,22 +44,11 @@ export class JobCreationService {
   }
 
   /**
-   * Enqueues a job for processing.
-   * @param ffmpegCmd - The ffmpeg command to execute.
-   * @returns The ID of the enqueued job, or null if the job is an exact duplicate.
-   * @throws {Error} If the ffmpeg command is invalid.
-   */
-  enqueue(ffmpegCmd: string) {
-    const job = this.createJob(ffmpegCmd);
-    return this.jobsRepo.enqueue(job);
-  }
-
-  /**
    * Creates a job from the provided ffmpeg command.
    * @param ffmpegCmd - The ffmpeg command to execute.
    * @throws {Error} If the ffmpeg command is invalid.
    */
-  private createJob(ffmpegCmd: string): Job {
+  private createJob(ffmpegCmd: string) {
     this.log.info(`Attempting to create job for command: ${ffmpegCmd}`, {
       ffmpegCmd,
     });

@@ -1,6 +1,13 @@
 import type { JobStatus } from "@/jobs/core/job-status";
 import { EventEmitter } from "events";
 
+export type StatusCount = {
+  pending: number;
+  running: number;
+  succeeded: number;
+  failed: number;
+};
+
 export interface JobInfo {
   id: number;
   command: string;
@@ -22,12 +29,7 @@ export type AppEventType = (typeof APP_EVENT_TYPE)[keyof typeof APP_EVENT_TYPE];
 export interface AppStateData {
   currentJob: JobInfo | null;
   lastAddedJob: JobInfo | null;
-  jobCounts: {
-    pending: number;
-    running: number;
-    completed: number;
-    failed: number;
-  };
+  statusCount: StatusCount;
   recentEvents: AppEvent[];
 }
 
@@ -35,23 +37,51 @@ export class AppState extends EventEmitter {
   private state: AppStateData = {
     currentJob: null,
     lastAddedJob: null,
-    jobCounts: { pending: 0, running: 0, completed: 0, failed: 0 },
+    statusCount: {
+      pending: 0,
+      running: 0,
+      succeeded: 0,
+      failed: 0,
+    },
     recentEvents: [],
   };
+
+  private batchDepth = 0;
+  private shouldEmit = false;
 
   getState(): Readonly<AppStateData> {
     return { ...this.state };
   }
 
+  batch(fn: () => void) {
+    this.batchDepth++;
+    try {
+      fn();
+    } finally {
+      this.batchDepth--;
+      if (this.batchDepth === 0 && this.shouldEmit) {
+        this.shouldEmit = false;
+        this.emit(APP_EVENT_TYPE.CHANGE, this.state);
+      }
+    }
+  }
+
+  private emitChange() {
+    if (this.batchDepth > 0) {
+      this.shouldEmit = true;
+    } else {
+      this.emit(APP_EVENT_TYPE.CHANGE, this.state);
+    }
+  }
+
   setCurrentJob(job: JobInfo | null) {
     this.state.currentJob = job;
-    this.emit(APP_EVENT_TYPE.CHANGE, this.state);
+    this.emitChange();
   }
 
   setLastAddedJob(job: JobInfo) {
     this.state.lastAddedJob = job;
-    this.state.jobCounts.pending++;
-    this.emit(APP_EVENT_TYPE.CHANGE, this.state);
+    this.emitChange();
   }
 
   updateJobStatus(cmd: string, status: JobStatus) {
@@ -61,7 +91,12 @@ export class AppState extends EventEmitter {
     if (this.state.lastAddedJob && this.state.lastAddedJob.command === cmd) {
       this.state.lastAddedJob.status = status;
     }
-    this.emit(APP_EVENT_TYPE.CHANGE, this.state);
+    this.emitChange();
+  }
+
+  updateJobStatusCount(statusCount: StatusCount) {
+    this.state.statusCount = statusCount;
+    this.emitChange();
   }
 
   // incrementCompleted() {
@@ -76,12 +111,6 @@ export class AppState extends EventEmitter {
   //   this.emit(APP_EVENT_TYPE.CHANGE, this.state);
   // }
 
-  startJob() {
-    this.state.jobCounts.running++;
-    this.state.jobCounts.pending--;
-    this.emit(APP_EVENT_TYPE.CHANGE, this.state);
-  }
-
   addLogEvent(level: string, message: string) {
     this.state.recentEvents.push({
       timestamp: Date.now(),
@@ -89,6 +118,6 @@ export class AppState extends EventEmitter {
       message,
     });
     this.state.recentEvents = this.state.recentEvents.slice(-10);
-    this.emit(APP_EVENT_TYPE.CHANGE, this.state);
+    this.emitChange();
   }
 }

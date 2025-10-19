@@ -57,7 +57,6 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
         stderr: "pipe",
         stdout: "pipe",
       });
-      this.appState.startJob();
       const errResponse = await new Response(proc.stderr).text();
       const outResponse = await new Response(proc.stdout).text();
       const exitCode = await proc.exited;

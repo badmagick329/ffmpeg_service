@@ -14,8 +14,4 @@ export class JobLifecycleService {
   setFail(jobId: number) {
     this.jobsRepo.setFail(jobId);
   }
-
-  setRunning(jobId: number) {
-    this.jobsRepo.setRunning(jobId);
-  }
 }

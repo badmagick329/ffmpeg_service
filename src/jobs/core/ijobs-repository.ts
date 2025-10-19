@@ -1,5 +1,5 @@
-import type { Job } from "@/jobs/core/job";
-import type { JobStatus } from "@/jobs/core/job-status";
+import type { NewJob } from "@/jobs";
+import type { StatusCount } from "@/tui/app-state";
 
 export interface IJobsRepository {
   /**
@@ -12,7 +12,7 @@ export interface IJobsRepository {
   claim(): { id: number; localizedCmd: string } | null;
   setSuccess(jobId: number): void;
   setFail(jobId: number): void;
-  setRunning(jobId: number): void;
-  enqueueUnique(job: Job): { id: number } | null;
-  enqueue(job: Job): { id: number } | null;
+  enqueueUnique(job: NewJob): { id: number } | null;
+
+  getJobStatusCount(): StatusCount;
 }
