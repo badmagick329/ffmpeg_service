@@ -3,7 +3,7 @@ import { config, initDirectories } from "@/infra/config";
 import { SQLInputFilesRepo, InputFilesWatchService } from "@/file-ingestion";
 import {
   JobCreationService,
-  JobProcessingService,
+  JobLifecycleService,
   JobsRepository,
 } from "@/jobs";
 import {
@@ -25,7 +25,7 @@ async function main() {
   initDirectories();
   const inputsRepo = new SQLInputFilesRepo();
   const jobsRepo = new JobsRepository(appState, logger);
-  const jobProcessingService = new JobProcessingService(jobsRepo);
+  const jobLifecycleService = new JobLifecycleService(jobsRepo);
   const pathTranslator = new PathTranslator({
     src: config.incomingDir,
     dst: config.outgoingDir,
@@ -36,7 +36,7 @@ async function main() {
   startFsCommandsWatcher(cmdTranslator, jobsRepo);
   startFFmpegJobListener(
     cmdTranslator,
-    jobProcessingService,
+    jobLifecycleService,
     config.jobPollInterval
   );
   start(appState);
@@ -84,14 +84,14 @@ function startFsCommandsWatcher(
 
 function startFFmpegJobListener(
   cmdTranslator: CmdTranslator,
-  jobProcessingService: JobProcessingService,
+  jobLifecycleService: JobLifecycleService,
   pollInterval: number
 ) {
   const cmdRunner = new FFmpegCommandRunner(cmdTranslator, appState, logger);
   const ffmpegJobListener = new FFmpegJobListener(
     cmdRunner,
     cmdTranslator,
-    jobProcessingService,
+    jobLifecycleService,
     pollInterval,
     logger
   );
