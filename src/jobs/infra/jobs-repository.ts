@@ -49,7 +49,12 @@ export class JobsRepository implements IJobsRepository {
       $now: now,
     }) as { id: number; localized_cmd: string } | undefined;
     if (claimed) {
-      this.log.info("Claimed job", { jobId: claimed.id, leaseUntil });
+      this.log.info(
+        `Claimed job ID: ${claimed.id} leaseUntil: ${
+          new Date(leaseUntil).toISOString().split("T")[0]
+        }`,
+        { jobId: claimed.id, leaseUntil }
+      );
       this.appState.setCurrentJob({
         id: claimed.id,
         command: claimed.localized_cmd,

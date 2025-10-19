@@ -17,9 +17,12 @@ export class FFmpegJobListener {
   }
 
   async listen() {
-    this.log.info("Starting FFmpeg job listener", {
-      pollInterval: this.pollInterval,
-    });
+    this.log.info(
+      `Starting FFmpeg job listener with polling interval: ${this.pollInterval}ms`,
+      {
+        pollInterval: this.pollInterval,
+      }
+    );
     while (true) {
       const job = this.jobProcessingService.claim();
       if (!job) {

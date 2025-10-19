@@ -39,7 +39,9 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
     const parsed = ParsedCmd.create(cmd);
     const arrayCmd = this.cmdTranslator.cmdToArray(parsed);
     if (debug) {
-      this.log.info("Running command in debug:", { cmd: arrayCmd });
+      this.log.info(`Running command in debug: ${arrayCmd.join(" ")}`, {
+        cmd: arrayCmd,
+      });
       return {
         exitCode: 0,
         stderr: "Debug mode: Command not executed",
@@ -48,7 +50,9 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
     }
 
     try {
-      this.log.info("Running command:", { cmd: arrayCmd });
+      this.log.info(`Running command: ${arrayCmd.join(" ")}`, {
+        cmd: arrayCmd,
+      });
       const proc = Bun.spawn(arrayCmd, {
         stderr: "pipe",
         stdout: "pipe",
@@ -67,7 +71,7 @@ export class FFmpegCommandRunner implements IFFmpegCommandRunner {
         exitCode: exitCode,
       };
     } catch (error) {
-      this.log.error("Encountered Error", { error });
+      this.log.error(`Encountered Error: ${error}`, { error });
       this.appState.updateJobStatus(cmd, JOB_STATUS.FAILED);
 
       return {

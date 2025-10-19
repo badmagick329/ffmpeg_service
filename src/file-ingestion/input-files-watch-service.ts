@@ -37,7 +37,6 @@ export class InputFilesWatchService {
       await new Promise((resolve) =>
         setTimeout(resolve, this.reconciliationInterval)
       );
-      this.log.info("Checking input dir list");
       await this.reconcileInputFiles();
     }
   }
@@ -45,19 +44,19 @@ export class InputFilesWatchService {
   private onAdd = (filepath: string, stats?: Stats): void => {
     const result = this.inputsRepo.add(filepath);
     if (!result) {
-      this.log.error("Failed to add file:", { filepath });
+      this.log.error(`Failed to add file: ${filepath}`, { filepath });
       return;
     }
-    this.log.info("File added to repo:", { filepath });
+    this.log.info(`File added to repo: ${filepath}`, { filepath });
   };
 
   private onUnlink = (filepath: string, stats?: Stats): void => {
     const result = this.inputsRepo.remove(filepath);
     if (!result) {
-      this.log.error("Failed to remove file:", { filepath });
+      this.log.error(`Failed to remove file: ${filepath}`, { filepath });
       return;
     }
-    this.log.info("File removed from repo:", { filepath });
+    this.log.info(`File removed from repo: ${filepath}`, { filepath });
   };
 
   private async reconcileInputFiles() {
@@ -65,7 +64,7 @@ export class InputFilesWatchService {
       const inputFilesList = await fs.readdir(this.inputsDir);
       this.inputsRepo.reconcileInputFiles(inputFilesList);
     } catch (error) {
-      this.log.error("Error reconciling input dir", { error });
+      this.log.error(`Error reconciling input dir: ${error}`, { error });
     }
   }
 }

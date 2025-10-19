@@ -26,12 +26,14 @@ export class JobCreationService {
     try {
       job = this.createJob(ffmpegCmd);
     } catch (error) {
-      this.log.error("Failed to create job:", { error });
+      this.log.error(`Failed to create job: ${error}`, { error });
       return null;
     }
     const result = this.jobsRepo.enqueueUnique(job);
     if (result) {
-      this.log.info("Enqueued unique job with ID:", { jobId: result.id });
+      this.log.info(`Enqueued unique job with ID: ${result.id}`, {
+        jobId: result.id,
+      });
     } else {
       this.log.warn(
         "Job with the same localized command already exists. Skipping enqueue."
@@ -57,7 +59,9 @@ export class JobCreationService {
    * @throws {Error} If the ffmpeg command is invalid.
    */
   private createJob(ffmpegCmd: string): Job {
-    this.log.info("Attempting to create job for command:", { ffmpegCmd });
+    this.log.info(`Attempting to create job for command: ${ffmpegCmd}`, {
+      ffmpegCmd,
+    });
     return Job.fromCmd(ffmpegCmd, this.cmdTranslator);
   }
 }
