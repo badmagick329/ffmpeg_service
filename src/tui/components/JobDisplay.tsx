@@ -13,7 +13,7 @@ export default function JobDisplay({ job }: { job: JobInfo }) {
 
     const interval = setInterval(() => {
       setTimeDelta(humanReadableTimeDelta(job.startTime!));
-    }, 1000);
+    }, 1000 * 60);
 
     return () => clearInterval(interval);
   }, [job.startTime, job.status]);
@@ -36,17 +36,15 @@ export default function JobDisplay({ job }: { job: JobInfo }) {
 function humanReadableTimeDelta(startTime: number): string {
   const now = Date.now();
   const delta = now - startTime;
-  let humanReadableDifference = null;
 
   if (delta > 1000 * 60 * 60) {
-    humanReadableDifference = `${Math.round(delta / (1000 * 60 * 60))}h ago`;
-  } else if (delta > 1000 * 60) {
-    humanReadableDifference = `${Math.round(delta / (1000 * 60))}m ago`;
-  } else {
-    humanReadableDifference = `${Math.round(delta / 1000)}s ago`;
+    return `${Math.round(delta / (1000 * 60 * 60))}h ago`;
+  }
+  if (delta > 1000 * 60) {
+    return `${Math.round(delta / (1000 * 60))}m ago`;
   }
 
-  return humanReadableDifference;
+  return `less than a min ago`;
 }
 
 function statusColor(status: string): string {
