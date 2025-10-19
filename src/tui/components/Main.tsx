@@ -1,4 +1,8 @@
-import { APP_EVENT_TYPE, type AppState, type JobInfo } from "@/tui/app-state";
+import {
+  APP_EVENT_TYPE,
+  type AppState,
+  type JobInfo,
+} from "@/tui/lib/app-state";
 import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
 import JobDisplay from "@/tui/components/JobDisplay";

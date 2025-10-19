@@ -7,7 +7,7 @@ import type {
   LoggerPort,
 } from "../common/logger-port";
 import { AppStateTransport } from "./app-state-transport";
-import type { AppState } from "@/tui/app-state";
+import type { AppState } from "@/tui/lib/app-state";
 
 export class WinstonLogger implements LoggerPort {
   private readonly logger: WinstonCore;

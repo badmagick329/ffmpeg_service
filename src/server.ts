@@ -13,7 +13,7 @@ import {
 } from "@/ffmpeg-job-listener";
 import { FsWatcher } from "@/fs-watcher";
 import { WinstonLogger } from "@/infra/winston-logger";
-import { AppState } from "@/tui/app-state";
+import { AppState } from "@/tui/lib/app-state";
 import { start } from "@/tui/ui";
 
 const appState = new AppState();

@@ -1,5 +1,5 @@
 import { JOB_STATUS } from "@/jobs";
-import type { StatusCount } from "@/tui/app-state";
+import type { StatusCount } from "@/tui/lib/app-state";
 import { getJobStatusColor } from "@/tui/lib/job-status-color";
 import { Box, Text } from "ink";
 

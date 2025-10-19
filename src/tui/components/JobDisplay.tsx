@@ -1,5 +1,5 @@
 import { JOB_STATUS } from "@/jobs";
-import type { JobInfo } from "@/tui/app-state";
+import type { JobInfo } from "@/tui/lib/app-state";
 import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
 import { getJobStatusColor } from "@/tui/lib/job-status-color";

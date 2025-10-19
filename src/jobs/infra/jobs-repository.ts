@@ -3,7 +3,7 @@ import type { NewJob } from "@/jobs/core/job";
 import { JOB_STATUS, type JobStatus } from "@/jobs/core/job-status";
 import { jobsManager } from "@/infra/db";
 import type { LoggerPort } from "@/common/logger-port";
-import type { AppState, StatusCount } from "@/tui/app-state";
+import type { AppState, StatusCount } from "@/tui/lib/app-state";
 
 export class JobsRepository implements IJobsRepository {
   private readonly _enqueue: typeof jobsManager.enqueue;

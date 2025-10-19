@@ -1,5 +1,5 @@
 import type { NewJob } from "@/jobs";
-import type { StatusCount } from "@/tui/app-state";
+import type { StatusCount } from "@/tui/lib/app-state";
 
 export interface IJobsRepository {
   /**

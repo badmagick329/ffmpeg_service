@@ -1,4 +1,4 @@
-import type { AppEvent } from "@/tui/app-state";
+import type { AppEvent } from "@/tui/lib/app-state";
 import { Box, Text } from "ink";
 
 const getLevelColor = (level: string): string => {

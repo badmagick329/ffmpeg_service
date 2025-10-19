@@ -1,5 +1,5 @@
 import Transport from "winston-transport";
-import type { AppState } from "@/tui/app-state";
+import type { AppState } from "@/tui/lib/app-state";
 
 export class AppStateTransport extends Transport {
   private appState: AppState;
