@@ -21,7 +21,7 @@ const logger = new WinstonLogger(config.logConfig, {}, appState);
 const mainLogger = logger.withContext({ service: "Main" });
 
 async function main() {
-  mainLogger.info("Starting ffmpeg service...");
+  mainLogger.info("Starting ffmpeg service");
   initDirectories();
   const inputsRepo = new SQLInputFilesRepo();
   const jobsRepo = new JobsRepository(appState, logger);

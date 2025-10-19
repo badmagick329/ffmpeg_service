@@ -2,7 +2,7 @@ import type { ICmdTranslator } from "@/command-translation/cmd-translator";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import type { LoggerPort } from "@/common/logger-port";
 import { JOB_STATUS } from "@/jobs";
-import type { AppState } from "@/tui/lib/app-state";
+import type { IAppState } from "@/tui/lib/app-state";
 
 export interface IFFmpegCommandRunner {
   run({ cmd, debug }: { cmd: string; debug: boolean }): Promise<{
@@ -13,12 +13,12 @@ export interface IFFmpegCommandRunner {
 }
 
 export class FFmpegCommandRunner implements IFFmpegCommandRunner {
-  private readonly appState: AppState;
+  private readonly appState: IAppState;
   private readonly log: LoggerPort;
 
   constructor(
     readonly cmdTranslator: ICmdTranslator,
-    appState: AppState,
+    appState: IAppState,
     logger: LoggerPort
   ) {
     this.appState = appState;

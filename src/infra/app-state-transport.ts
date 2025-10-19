@@ -1,10 +1,10 @@
 import Transport from "winston-transport";
-import type { AppState } from "@/tui/lib/app-state";
+import type { IAppState } from "@/tui/lib/app-state";
 
 export class AppStateTransport extends Transport {
-  private appState: AppState;
+  private appState: IAppState;
 
-  constructor(appState: AppState, opts?: Transport.TransportStreamOptions) {
+  constructor(appState: IAppState, opts?: Transport.TransportStreamOptions) {
     super(opts);
     this.appState = appState;
   }

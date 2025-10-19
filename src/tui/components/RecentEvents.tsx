@@ -22,7 +22,7 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
       <Text bold underline>
         Recent Events:
       </Text>
-      {appEvents.length === 0 && <Text dimColor>No events yet...</Text>}
+      {appEvents.length === 0 && <Text dimColor>No events yet</Text>}
       {appEvents.map((e: AppEvent, idx: number) => {
         const time = new Date(e.timestamp).toLocaleTimeString();
         return (

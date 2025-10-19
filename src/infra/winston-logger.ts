@@ -7,17 +7,17 @@ import type {
   LoggerPort,
 } from "../common/logger-port";
 import { AppStateTransport } from "./app-state-transport";
-import type { AppState } from "@/tui/lib/app-state";
+import type { IAppState } from "@/tui/lib/app-state";
 
 export class WinstonLogger implements LoggerPort {
   private readonly logger: WinstonCore;
   private readonly logConfig: LogConfig;
-  private readonly appState?: AppState;
+  private readonly appState?: IAppState;
 
   constructor(
     logConfig: LogConfig,
     baseFields: LoggerFields = {},
-    appState?: AppState
+    appState?: IAppState
   ) {
     this.logConfig = logConfig;
     this.appState = appState;
@@ -35,7 +35,7 @@ export class WinstonLogger implements LoggerPort {
     // Build the transports array
     const transports: any[] = [rotateTransport];
 
-    // Add AppState transport if provided (for TUI)
+    // Add IAppState transport if provided (for TUI)
     if (appState) {
       transports.push(
         new AppStateTransport(appState, {

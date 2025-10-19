@@ -33,7 +33,17 @@ export interface AppStateData {
   recentEvents: AppEvent[];
 }
 
-export class AppState extends EventEmitter {
+export interface IAppState {
+  getState(): Readonly<AppStateData>;
+  batch(fn: () => void): void;
+  setCurrentJob(job: JobInfo | null): void;
+  setLastAddedJob(job: JobInfo): void;
+  updateJobStatus(cmd: string, status: JobStatus): void;
+  updateJobStatusCount(statusCount: StatusCount): void;
+  addLogEvent(level: string, message: string): void;
+}
+
+export class AppState extends EventEmitter implements IAppState {
   private state: AppStateData = {
     currentJob: null,
     lastAddedJob: null,
@@ -98,18 +108,6 @@ export class AppState extends EventEmitter {
     this.state.statusCount = statusCount;
     this.emitChange();
   }
-
-  // incrementCompleted() {
-  //   this.state.jobCounts.completed++;
-  //   this.state.jobCounts.running--;
-  //   this.emit(APP_EVENT_TYPE.CHANGE, this.state);
-  // }
-
-  // incrementFailed() {
-  //   this.state.jobCounts.failed++;
-  //   this.state.jobCounts.running--;
-  //   this.emit(APP_EVENT_TYPE.CHANGE, this.state);
-  // }
 
   addLogEvent(level: string, message: string) {
     this.state.recentEvents.push({

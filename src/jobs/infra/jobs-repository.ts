@@ -3,7 +3,7 @@ import type { NewJob } from "@/jobs/core/job";
 import { JOB_STATUS, type JobStatus } from "@/jobs/core/job-status";
 import { jobsManager } from "@/infra/db";
 import type { LoggerPort } from "@/common/logger-port";
-import type { AppState, StatusCount } from "@/tui/lib/app-state";
+import type { IAppState, StatusCount } from "@/tui/lib/app-state";
 
 export class JobsRepository implements IJobsRepository {
   private readonly _enqueue: typeof jobsManager.enqueue;
@@ -13,10 +13,10 @@ export class JobsRepository implements IJobsRepository {
   private readonly _claim: typeof jobsManager.claim;
   private readonly _getStatusCount: typeof jobsManager.getStatusCount;
 
-  private readonly appState: AppState;
+  private readonly appState: IAppState;
   private readonly log: LoggerPort;
 
-  constructor(appState: AppState, logger: LoggerPort) {
+  constructor(appState: IAppState, logger: LoggerPort) {
     this._enqueue = jobsManager.enqueue;
     this._setSuccess = jobsManager.setSuccess;
     this._setFail = jobsManager.setFail;
