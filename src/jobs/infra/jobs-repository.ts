@@ -108,7 +108,7 @@ export class JobsRepository implements IJobsRepository {
   }
 
   getJobStatusCount(): StatusCount {
-    const queryResult = this._getStatusCount.get() as {
+    const queryResult = this._getStatusCount.all() as {
       status: string;
       count: number;
     }[];
