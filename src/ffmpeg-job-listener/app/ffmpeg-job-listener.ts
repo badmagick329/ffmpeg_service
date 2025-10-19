@@ -28,12 +28,12 @@ export class FFmpegJobListener {
       }
       try {
         const result = await this.run({ cmd: job.localizedCmd, debug: false });
-        this.log.info(`Job ${job.id} completed successfully.`, { result });
         if (result.exitCode !== 0) {
           throw new Error(
             `FFmpeg command failed with exit code ${result.exitCode}. Stderr: ${result.stderr}`
           );
         }
+        this.log.info(`Job ${job.id} completed successfully.`, { result });
         this.jobProcessingService.setSuccess(job.id);
       } catch (error) {
         this.log.error(`Job ${job.id} failed: ${error}`);
