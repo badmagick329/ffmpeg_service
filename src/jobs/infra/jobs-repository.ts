@@ -25,6 +25,7 @@ export class JobsRepository implements IJobsRepository {
     this._getStatusCount = jobsManager.getStatusCount;
 
     this.appState = appState;
+    this.appState.updateJobStatusCount(this.getJobStatusCount());
     this.log = logger.withContext({ service: "JobsRepository" });
   }
   setSuccess(jobId: number) {
