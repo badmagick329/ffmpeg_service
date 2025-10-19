@@ -1,6 +1,6 @@
 import type { IJobsRepository } from "@/jobs/core/ijobs-repository";
 
-export class JobProcessingService {
+export class JobLifecycleService {
   constructor(private readonly jobsRepo: IJobsRepository) {}
 
   claim() {

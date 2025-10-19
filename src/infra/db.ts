@@ -108,7 +108,7 @@ const qGetByInputFile = _db.query(
 const qClaim = _db.query(
   `
   UPDATE jobs
-    SET status='running',
+    SET status='${JOB_STATUS.RUNNING}',
       attempts = attempts + 1,
       locked_by=$wid,
       lease_until=$lease,
@@ -123,30 +123,30 @@ const qClaim = _db.query(
         WHERE f.input_file = j.input_file
       ) 
       AND (
-      j.status='pending'
-      OR (j.status='running' AND (j.lease_until IS NULL OR j.lease_until <= $now)))
+      j.status='${JOB_STATUS.PENDING}'
+      OR (j.status='${JOB_STATUS.RUNNING}' AND (j.lease_until IS NULL OR j.lease_until <= $now)))
     ORDER BY j.created_at
     LIMIT 1
   ) 
   AND (
-    status = 'pending'
-    OR (status='running' AND (lease_until IS NULL OR lease_until <= $now))
+    status = '${JOB_STATUS.PENDING}'
+    OR (status='${JOB_STATUS.RUNNING}' AND (lease_until IS NULL OR lease_until <= $now))
   )
   RETURNING id, localized_cmd`
 );
 
 const qOk = _db.query(
-  `UPDATE jobs SET status='succeeded', locked_by=NULL, lease_until=NULL,
+  `UPDATE jobs SET status='${JOB_STATUS.SUCCEEDED}', locked_by=NULL, lease_until=NULL,
                    updated_at=unixepoch() WHERE id=$id`
 );
 
 const qFail = _db.query(
-  `UPDATE jobs SET status='failed', last_error=$err, locked_by=NULL, lease_until=NULL,
+  `UPDATE jobs SET status='${JOB_STATUS.FAILED}', last_error=$err, locked_by=NULL, lease_until=NULL,
                    updated_at=unixepoch() WHERE id=$id`
 );
 
 const qRunning = _db.query(
-  `UPDATE jobs SET status='running', updated_at=unixepoch() WHERE id=$id`
+  `UPDATE jobs SET status='${JOB_STATUS.RUNNING}', updated_at=unixepoch() WHERE id=$id`
 );
 
 export const jobsManager = {

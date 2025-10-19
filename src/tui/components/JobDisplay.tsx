@@ -48,14 +48,16 @@ function humanReadableTimeDelta(startTime: number): string {
 }
 
 function statusColor(status: string): string {
-  if (status === JOB_STATUS.RUNNING) {
-    return "blue";
-  } else if (status === JOB_STATUS.PENDING) {
-    return "yellow";
-  } else if (status === JOB_STATUS.SUCCEEDED) {
-    return "green";
-  } else if (status === JOB_STATUS.FAILED) {
-    return "red";
+  switch (status) {
+    case JOB_STATUS.RUNNING:
+      return "blue";
+    case JOB_STATUS.PENDING:
+      return "yellow";
+    case JOB_STATUS.SUCCEEDED:
+      return "green";
+    case JOB_STATUS.FAILED:
+      return "red";
+    default:
+      return "white";
   }
-  return "white";
 }

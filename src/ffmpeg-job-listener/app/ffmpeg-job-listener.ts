@@ -1,5 +1,5 @@
 import type { ICmdTranslator } from "@/command-translation/cmd-translator";
-import { JobProcessingService } from "@/jobs";
+import { JobLifecycleService } from "@/jobs";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import type { IFFmpegCommandRunner } from "@/ffmpeg-job-listener/infra/ffmpeg-command-runner";
 import type { LoggerPort } from "@/common/logger-port";
@@ -9,7 +9,7 @@ export class FFmpegJobListener {
   constructor(
     private readonly runner: IFFmpegCommandRunner,
     private readonly cmdTranslator: ICmdTranslator,
-    private readonly jobProcessingService: JobProcessingService,
+    private readonly jobLifecycleService: JobLifecycleService,
     private readonly pollInterval: number,
     logger: LoggerPort
   ) {
@@ -24,7 +24,7 @@ export class FFmpegJobListener {
       }
     );
     while (true) {
-      const job = this.jobProcessingService.claim();
+      const job = this.jobLifecycleService.claim();
       if (!job) {
         await new Promise((resolve) => setTimeout(resolve, this.pollInterval));
         continue;
@@ -37,10 +37,10 @@ export class FFmpegJobListener {
           );
         }
         this.log.info(`Job ${job.id} completed successfully.`, { result });
-        this.jobProcessingService.setSuccess(job.id);
+        this.jobLifecycleService.setSuccess(job.id);
       } catch (error) {
         this.log.error(`Job ${job.id} failed: ${error}`);
-        this.jobProcessingService.setFail(job.id);
+        this.jobLifecycleService.setFail(job.id);
       }
     }
   }
