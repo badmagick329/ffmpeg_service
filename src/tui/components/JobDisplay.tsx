@@ -18,23 +18,12 @@ export default function JobDisplay({ job }: { job: JobInfo }) {
     return () => clearInterval(interval);
   }, [job.startTime, job.status]);
 
-  let statusColor = "white";
-  if (job.status === JOB_STATUS.RUNNING) {
-    statusColor = "yellow";
-  } else if (job.status === JOB_STATUS.PENDING) {
-    statusColor = "blue";
-  } else if (job.status === JOB_STATUS.SUCCEEDED) {
-    statusColor = "green";
-  } else if (job.status === JOB_STATUS.FAILED) {
-    statusColor = "red";
-  }
-
   return (
     <Box flexDirection="column">
       <Box gap={1}>
         <Text bold>Status</Text>
         <Text>-</Text>
-        <Text bold color={statusColor}>
+        <Text bold color={statusColor(job.status)}>
           {job.status}
         </Text>
       </Box>
@@ -58,4 +47,17 @@ function humanReadableTimeDelta(startTime: number): string {
   }
 
   return humanReadableDifference;
+}
+
+function statusColor(status: string): string {
+  if (status === JOB_STATUS.RUNNING) {
+    return "blue";
+  } else if (status === JOB_STATUS.PENDING) {
+    return "yellow";
+  } else if (status === JOB_STATUS.SUCCEEDED) {
+    return "green";
+  } else if (status === JOB_STATUS.FAILED) {
+    return "red";
+  }
+  return "white";
 }
