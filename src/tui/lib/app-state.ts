@@ -115,7 +115,9 @@ export class AppState extends EventEmitter implements IAppState {
       type: level,
       message,
     });
-    this.state.recentEvents = this.state.recentEvents.slice(-10);
+    if (this.state.recentEvents.length > 200) {
+      this.state.recentEvents = this.state.recentEvents.slice(-200);
+    }
     this.emitChange();
   }
 }

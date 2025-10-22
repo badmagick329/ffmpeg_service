@@ -1,5 +1,6 @@
 import type { AppEvent } from "@/tui/lib/app-state";
 import { Box, Text } from "ink";
+import { ScrollableList } from "ink-scrollable-list";
 
 const getLevelColor = (level: string): string => {
   switch (level.toLowerCase()) {
@@ -22,19 +23,27 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
       <Text bold underline>
         Recent Events:
       </Text>
-      {appEvents.length === 0 && <Text dimColor>No events yet</Text>}
-      {appEvents.map((e: AppEvent, idx: number) => {
-        const time = new Date(e.timestamp).toLocaleTimeString();
-        return (
-          <Box key={idx} gap={1}>
-            <Text dimColor>{time}</Text>
-            <Text color={getLevelColor(e.type)} bold>
-              [{e.type.toUpperCase()}]
-            </Text>
-            <Text>{e.message}</Text>
-          </Box>
-        );
-      })}
+      {appEvents.length === 0 ? (
+        <Text dimColor>No events yet</Text>
+      ) : (
+        <ScrollableList
+          items={appEvents}
+          keyFn={(e) => e.timestamp}
+          visibleCount={5}
+          renderItem={(e, idx) => {
+            const time = new Date(e.timestamp).toLocaleTimeString();
+            return (
+              <Box key={e.timestamp} gap={1}>
+                <Text dimColor>{time}</Text>
+                <Text color={getLevelColor(e.type)} bold>
+                  [{e.type.toUpperCase()}]
+                </Text>
+                <Text>{e.message}</Text>
+              </Box>
+            );
+          }}
+        />
+      )}
     </Box>
   );
 }
