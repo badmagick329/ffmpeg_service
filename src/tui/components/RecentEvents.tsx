@@ -29,7 +29,7 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
         <ScrollableList
           items={appEvents}
           visibleCount={5}
-          renderItem={(e, idx) => {
+          renderItem={(e) => {
             const time = new Date(e.timestamp).toLocaleTimeString();
             return (
               <Box gap={1}>
@@ -37,7 +37,7 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
                 <Text color={getLevelColor(e.type)} bold>
                   [{e.type.toUpperCase()}]
                 </Text>
-                <Text>{e.message}</Text>
+                <Text wrap="truncate-start">{e.message}</Text>
               </Box>
             );
           }}
