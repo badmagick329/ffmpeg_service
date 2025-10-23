@@ -29,6 +29,7 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
         <ScrollableList
           items={appEvents}
           visibleCount={5}
+          startAtBottom={true}
           renderItem={(e) => {
             const time = new Date(e.timestamp).toLocaleTimeString();
             return (
