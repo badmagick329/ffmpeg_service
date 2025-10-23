@@ -28,12 +28,11 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
       ) : (
         <ScrollableList
           items={appEvents}
-          keyFn={(e) => e.timestamp}
           visibleCount={5}
           renderItem={(e, idx) => {
             const time = new Date(e.timestamp).toLocaleTimeString();
             return (
-              <Box key={e.timestamp} gap={1}>
+              <Box gap={1}>
                 <Text dimColor>{time}</Text>
                 <Text color={getLevelColor(e.type)} bold>
                   [{e.type.toUpperCase()}]

@@ -16,6 +16,7 @@ export interface JobInfo {
 }
 
 export interface AppEvent {
+  id: string;
   timestamp: number;
   type: string;
   message: string;
@@ -111,6 +112,7 @@ export class AppState extends EventEmitter implements IAppState {
 
   addLogEvent(level: string, message: string) {
     this.state.recentEvents.push({
+      id: crypto.randomUUID(),
       timestamp: Date.now(),
       type: level,
       message,
