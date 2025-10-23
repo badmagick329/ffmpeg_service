@@ -43,7 +43,7 @@ function humanReadableTimeDelta(startTime: number): string {
 
   if (delta > 1000 * 60 * 60) {
     return `${Math.round(delta / (1000 * 60 * 60))}h${Math.round(
-      delta / (1000 * 60)
+      delta % (1000 * 60)
     )}m ago`;
   }
   if (delta > 1000 * 60) {
