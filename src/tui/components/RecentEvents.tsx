@@ -17,8 +17,12 @@ const getLevelColor = (level: string): string => {
   }
 };
 
+const BRACKET_AND_SPACE_LENGTH = 5;
+const ELLIPSIS_LENGTH = 3;
+
 export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
   const safeWidth = useListItemWidth(true, "round");
+
   return (
     <Box flexDirection="column">
       <Text bold underline>
@@ -34,10 +38,18 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
           renderItem={(e) => {
             const time = new Date(e.timestamp).toLocaleTimeString();
             const messageSafeWidth = Math.max(
-              3,
-              safeWidth - time.length - e.type.length - 5
+              ELLIPSIS_LENGTH,
+              safeWidth -
+                time.length -
+                e.type.length -
+                BRACKET_AND_SPACE_LENGTH -
+                ELLIPSIS_LENGTH
             );
-            const trimmedMessage = e.message.slice(0, messageSafeWidth);
+
+            let trimmedMessage = e.message.slice(-messageSafeWidth);
+            if (e.message.length > messageSafeWidth) {
+              trimmedMessage = "..." + trimmedMessage;
+            }
 
             return (
               <Box gap={1}>
