@@ -32,7 +32,12 @@ export default function JobDisplay({ job }: { job: JobInfo }) {
         </Text>
       </Box>
       <Text>{job.command}</Text>
-      {timeDelta && <Text>Started {timeDelta}</Text>}
+      {timeDelta && (
+        <Box gap={1}>
+          <Text>Started</Text>
+          <Text color={"yellow"}>{timeDelta}</Text>
+        </Box>
+      )}
     </Box>
   );
 }
