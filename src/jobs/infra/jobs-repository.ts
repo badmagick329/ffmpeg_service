@@ -56,7 +56,7 @@ export class JobsRepository implements IJobsRepository {
     if (claimed) {
       this.log.info(
         `Claimed job ID: ${claimed.id} leaseUntil: ${
-          new Date(leaseUntil).toISOString().split("T")[0]
+          new Date(leaseUntil).toISOString().split("Z")[0]
         }`,
         { jobId: claimed.id, leaseUntil }
       );
