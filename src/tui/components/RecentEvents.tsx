@@ -32,6 +32,7 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
         <Text dimColor>No events yet</Text>
       ) : (
         <ScrollableList
+          key={appEvents.length}
           items={appEvents}
           visibleCount={5}
           startAtBottom={true}
