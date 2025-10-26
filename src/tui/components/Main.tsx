@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import JobDisplay from "@/tui/components/JobDisplay";
 import RecentEvents from "@/tui/components/RecentEvents";
 import JobStatusCount from "@/tui/components/JobStatusCount";
+import RecentlyAddedJobs from "@/tui/components/RecentlyAddedJobs";
 
 export default function Main({ appState }: { appState: AppState }) {
   const [state, setState] = useState(appState.getState());
@@ -25,7 +26,7 @@ export default function Main({ appState }: { appState: AppState }) {
       <RecentEvents appEvents={state.recentEvents} />
       <JobStatusCount statusCount={state.statusCount} />
       <CurrentJob job={state.currentJob} />
-      <LastAddedJob job={state.lastAddedJob} />
+      <RecentlyAddedJobs jobs={state.recentJobs} />
     </Box>
   );
 }
@@ -37,19 +38,6 @@ function CurrentJob({ job }: { job: JobInfo | null }) {
     <Box flexDirection="column">
       <Text bold underline color="greenBright">
         Current Job:
-      </Text>
-      <JobDisplay job={job} />
-    </Box>
-  );
-}
-
-function LastAddedJob({ job }: { job: JobInfo | null }) {
-  if (!job) return;
-
-  return (
-    <Box flexDirection="column">
-      <Text bold underline color="yellowBright">
-        Last Added Job:
       </Text>
       <JobDisplay job={job} />
     </Box>

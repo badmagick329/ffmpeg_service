@@ -51,7 +51,12 @@ export class JobsRepository implements IJobsRepository {
       $lease: leaseUntil,
       $now: now,
     }) as
-      | { id: number; localized_cmd: string; oldStatus: JobStatus }
+      | {
+          id: number;
+          localized_cmd: string;
+          created_at: number;
+          oldStatus: JobStatus;
+        }
       | undefined;
     if (claimed) {
       this.log.info(
@@ -64,6 +69,7 @@ export class JobsRepository implements IJobsRepository {
         this.appState.setCurrentJob({
           id: claimed.id,
           command: claimed.localized_cmd,
+          createdAt: claimed.created_at * 1000,
           status: JOB_STATUS.RUNNING,
           startTime: now,
         });
@@ -92,14 +98,15 @@ export class JobsRepository implements IJobsRepository {
       $localized_cmd: job.localizedCmd,
       $input_file: job.inputFile,
       $status: JOB_STATUS.PENDING,
-    }) as { id: number } | undefined;
+    }) as { id: number; created_at: number } | undefined;
 
     if (result) {
       this.appState.batch(() => {
-        this.appState.setLastAddedJob({
+        this.appState.addJob({
           id: result.id,
-          status: JOB_STATUS.PENDING,
           command: job.localizedCmd,
+          status: JOB_STATUS.PENDING,
+          createdAt: result.created_at * 1000,
         });
         this.appState.updateJobStatusCount(this.getJobStatusCount());
       });

@@ -85,7 +85,7 @@ const inpReconcile = (files: string[]) => {
 
 const qEnq = _db.query(
   `INSERT OR IGNORE INTO jobs(raw_cmd, localized_cmd, input_file, status)
-  VALUES($raw_cmd, $localized_cmd, $input_file, $status) RETURNING id`
+  VALUES($raw_cmd, $localized_cmd, $input_file, $status) RETURNING id, created_at`
 );
 
 const qStatusUpdateFrom = _db.query(
@@ -129,7 +129,7 @@ const qClaim = _db.query(
     status = '${JOB_STATUS.PENDING}'
     OR (status='${JOB_STATUS.RUNNING}' AND (lease_until IS NULL OR lease_until <= $now))
   )
-  RETURNING id, localized_cmd, (SELECT old_status FROM selected_job) as old_status`
+  RETURNING id, localized_cmd, created_at, (SELECT old_status FROM selected_job) as old_status`
 );
 
 const qOk = _db.query(

@@ -37,11 +37,14 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
           visibleCount={5}
           startAtBottom={true}
           renderItem={(e) => {
-            const time = new Date(e.timestamp).toLocaleTimeString();
+            const dateTime = new Date(e.timestamp)
+              .toISOString()
+              .split(".")[0]!
+              .replace("T", " ");
             const messageSafeWidth = Math.max(
               ELLIPSIS_LENGTH,
               safeWidth -
-                time.length -
+                dateTime.length -
                 e.type.length -
                 BRACKET_AND_SPACE_LENGTH -
                 ELLIPSIS_LENGTH
@@ -49,12 +52,12 @@ export default function RecentEvents({ appEvents }: { appEvents: AppEvent[] }) {
 
             let trimmedMessage = e.message.slice(-messageSafeWidth);
             if (e.message.length > messageSafeWidth) {
-              trimmedMessage = "..." + trimmedMessage;
+              trimmedMessage = "…" + trimmedMessage;
             }
 
             return (
               <Box gap={1}>
-                <Text dimColor>{time}</Text>
+                <Text dimColor>{dateTime}</Text>
                 <Text color={getLevelColor(e.type)} bold>
                   [{e.type.toUpperCase()}]
                 </Text>

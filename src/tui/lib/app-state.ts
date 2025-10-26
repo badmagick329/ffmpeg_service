@@ -12,6 +12,7 @@ export interface JobInfo {
   id: number;
   command: string;
   status: JobStatus;
+  createdAt: number;
   startTime?: number;
 }
 
@@ -29,8 +30,8 @@ export type AppEventType = (typeof APP_EVENT_TYPE)[keyof typeof APP_EVENT_TYPE];
 
 export interface AppStateData {
   currentJob: JobInfo | null;
-  lastAddedJob: JobInfo | null;
   statusCount: StatusCount;
+  recentJobs: JobInfo[];
   recentEvents: AppEvent[];
 }
 
@@ -38,7 +39,7 @@ export interface IAppState {
   getState(): Readonly<AppStateData>;
   batch(fn: () => void): void;
   setCurrentJob(job: JobInfo | null): void;
-  setLastAddedJob(job: JobInfo): void;
+  addJob(job: JobInfo): void;
   updateJobStatus(cmd: string, status: JobStatus): void;
   updateJobStatusCount(statusCount: StatusCount): void;
   addLogEvent(level: string, message: string): void;
@@ -47,7 +48,7 @@ export interface IAppState {
 export class AppState extends EventEmitter implements IAppState {
   private state: AppStateData = {
     currentJob: null,
-    lastAddedJob: null,
+    recentJobs: [],
     statusCount: {
       pending: 0,
       running: 0,
@@ -90,8 +91,8 @@ export class AppState extends EventEmitter implements IAppState {
     this.emitChange();
   }
 
-  setLastAddedJob(job: JobInfo) {
-    this.state.lastAddedJob = job;
+  addJob(job: JobInfo) {
+    this.state.recentJobs.push(job);
     this.emitChange();
   }
 
@@ -99,9 +100,11 @@ export class AppState extends EventEmitter implements IAppState {
     if (this.state.currentJob && this.state.currentJob.command === cmd) {
       this.state.currentJob.status = status;
     }
-    if (this.state.lastAddedJob && this.state.lastAddedJob.command === cmd) {
-      this.state.lastAddedJob.status = status;
-    }
+
+    this.state.recentJobs
+      .filter((j) => j.command === cmd)
+      .forEach((j) => (j.status = status));
+
     this.emitChange();
   }
 
