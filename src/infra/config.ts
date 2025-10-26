@@ -2,6 +2,16 @@ import type { LogConfig } from "@/common/logger-port";
 import conf from "../../config.toml";
 import { mkdirSync } from "fs";
 
+export type ServerConfig = {
+  sshHost: string;
+  sshUser: string;
+  sshKeyPath?: string;
+  remoteWorkDir: string;
+  remoteCmdsDir: string;
+  copyTo: string;
+  copyFrom: string;
+};
+
 type ConfigType = {
   incomingDir: string;
   outgoingDir: string;
@@ -9,7 +19,8 @@ type ConfigType = {
   jobPollInterval: number;
   inputFilesReconciliationInterval: number;
   logConfig: LogConfig;
-  serverConfigs: { copyTo: string }[];
+  serverConfigs: ServerConfig[];
+  localOutputDir: string;
 };
 
 export const config: ConfigType = {
@@ -20,6 +31,7 @@ export const config: ConfigType = {
   inputFilesReconciliationInterval: conf.inputFilesReconciliationInterval,
   logConfig: conf.logConfig,
   serverConfigs: conf.serverConfigs,
+  localOutputDir: conf.localOutputDir,
 };
 
 export function initDirectories() {
