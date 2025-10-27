@@ -93,18 +93,20 @@ export class SshFileOperations implements IFileOperations {
     outputFile: string
   ): Promise<boolean> {
     const remoteFile = `${server.copyFrom}/${basename(outputFile)}`;
+    const successFile = `${server.remoteSuccessDir}/${basename(
+      remoteFile
+    )}.done`;
+
+    const successExists = await this.checkFileExists(server, successFile);
+    if (!successExists) {
+      return false;
+    }
+
     const fileExists = await this.checkFileExists(server, remoteFile);
     if (!fileExists) {
       return false;
     }
 
-    const successFile = `${server.remoteSuccessDir}/${basename(
-      remoteFile
-    )}.done`;
-    const successExists = await this.checkFileExists(server, successFile);
-    if (!successExists) {
-      return false;
-    }
     return true;
   }
 

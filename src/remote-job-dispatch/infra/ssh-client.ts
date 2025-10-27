@@ -8,6 +8,8 @@ export class SshClient implements IRemoteClient {
       ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
       "-o",
       "StrictHostKeyChecking=no",
+      "-o",
+      "ConnectTimeout=15",
       `${server.sshUser}@${server.sshHost}`,
       command,
     ];
@@ -24,7 +26,6 @@ export class SshClient implements IRemoteClient {
       to,
     ];
 
-    console.log(`Running scp command:\n${`scp ${scpArgs.join(" ")}`}`);
     try {
       return await $`scp ${scpArgs}`.text();
     } catch (error) {
