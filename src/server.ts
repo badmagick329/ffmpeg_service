@@ -37,7 +37,8 @@ async function main() {
   startFFmpegJobExecutor(
     cmdTranslator,
     jobLifecycleService,
-    config.jobPollInterval
+    config.jobPollInterval,
+    config.successDir
   );
   start(appState);
 
@@ -85,7 +86,8 @@ function startFsCommandsWatcher(
 function startFFmpegJobExecutor(
   cmdTranslator: CmdTranslator,
   jobLifecycleService: JobLifecycleService,
-  pollInterval: number
+  pollInterval: number,
+  successDir: string
 ) {
   const cmdRunner = new FFmpegCommandRunner(cmdTranslator, appState, logger);
   const ffmpegJobExecutor = new FFmpegJobExecutor(
@@ -93,6 +95,7 @@ function startFFmpegJobExecutor(
     cmdTranslator,
     jobLifecycleService,
     pollInterval,
+    successDir,
     logger
   );
   ffmpegJobExecutor.start();

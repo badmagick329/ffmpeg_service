@@ -8,6 +8,7 @@ export type ServerConfig = {
   sshKeyPath?: string;
   remoteWorkDir: string;
   remoteCmdsDir: string;
+  remoteSuccessDir: string;
   copyTo: string;
   copyFrom: string;
 };
@@ -21,6 +22,7 @@ type ConfigType = {
   logConfig: LogConfig;
   serverConfigs: ServerConfig[];
   localOutputDir: string;
+  successDir: string;
 };
 
 export const config: ConfigType = {
@@ -32,6 +34,7 @@ export const config: ConfigType = {
   logConfig: conf.logConfig,
   serverConfigs: conf.serverConfigs,
   localOutputDir: conf.localOutputDir,
+  successDir: conf.successDir,
 };
 
 export function initDirectories() {

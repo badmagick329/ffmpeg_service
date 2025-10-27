@@ -3,6 +3,7 @@ import { JobLifecycleService } from "@/jobs";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import type { IFFmpegCommandRunner } from "@/ffmpeg-job-executor/infra/ffmpeg-command-runner";
 import type { LoggerPort } from "@/common/logger-port";
+import { basename, join } from "node:path";
 
 export class FFmpegJobExecutor {
   private readonly log: LoggerPort;
@@ -11,6 +12,7 @@ export class FFmpegJobExecutor {
     private readonly cmdTranslator: ICmdTranslator,
     private readonly jobLifecycleService: JobLifecycleService,
     private readonly pollInterval: number,
+    private readonly successDir: string,
     logger: LoggerPort
   ) {
     this.log = logger.withContext({ service: "FFmpegJobListener" });
@@ -36,6 +38,17 @@ export class FFmpegJobExecutor {
             `FFmpeg command failed with exit code ${result.exitCode}. Stderr: ${result.stderr}`
           );
         }
+        const cmd = ParsedCmd.create(job.localizedCmd);
+        const filenameMatch = basename(cmd.output).match(/(.+)\.[^.]+$/);
+        if (!filenameMatch) {
+          throw new Error(
+            `Could not extract filename from output path: ${cmd.output}`
+          );
+        }
+        const filename = filenameMatch[1]!;
+        const successFile = Bun.file(join(this.successDir, filename));
+        await successFile.write(`Job ${job.id} completed successfully.`);
+
         this.log.info(`Job ${job.id} completed successfully.`, { result });
         this.jobLifecycleService.setSuccess(job.id);
       } catch (error) {

@@ -1,10 +1,14 @@
 incomingDir = "./data/incoming"
 outgoingDir = "./data/outgoing"
+
 # This is where the completed files will be downloaded to
 localOutputDir = "C:\\local\\output\\directory"
 
 # This is where the files with ffmpeg commands are read from
 cmdsInputDir = './data/cmds'
+
+successDir = "./data/success"
+
 # 10 seconds (milliseconds)
 jobPollInterval = 10000
 # 10 minutes (milliseconds)
@@ -28,8 +32,9 @@ sshUser = "username1"
 sshKeyPath = "C:\\Users\\YourUser\\.ssh\\id_rsa"  # Optional
 remoteWorkDir = "/home/username1/ffmpeg_service"
 remoteCmdsDir = "/home/username1/ffmpeg_service/data/cmds"
-copyTo = "/home/username1/apps/ffmpeg/work/videos"
-copyFrom = "/home/username1/apps/ffmpeg/work/videos_out"
+remoteSuccessDir = "/home/username1/ffmpeg_service/work/success"
+copyTo = "/home/username1/ffmpeg_service/work/videos"
+copyFrom = "/home/username1/ffmpeg_service/work/videos_out"
 
 [[serverConfigs]]
 sshHost = "server2.example.com"
@@ -37,5 +42,6 @@ sshUser = "username2"
 # sshKeyPath not specified
 remoteWorkDir = "/home/username2/ffmpeg_service"
 remoteCmdsDir = "/home/username2/ffmpeg_service/cmds"
+remoteSuccessDir = "/home/username2/stuff/ffmpeg/success"
 copyTo = "/home/username2/stuff/ffmpeg/incoming"
 copyFrom = "/home/username2/stuff/ffmpeg/outgoing"
