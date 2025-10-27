@@ -1,29 +1,20 @@
 import type { ServerConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
-import type { IRemoteExecutor } from "@/remote-job-dispatch/core/iremote-executor";
-import { $ } from "bun";
-import { basename, join } from "path";
+import type { IRemoteClient } from "@/remote-job-dispatch/core/iremote-client";
+import { basename } from "path";
 import { filenameWithoutExt } from "@/common/path-utils";
 
 export class SshFileOperations implements IFileOperations {
   private readonly log = console.log;
 
-  constructor(private remoteExecutor: IRemoteExecutor) {}
+  constructor(private remoteClient: IRemoteClient) {}
 
   async uploadFile(
     server: ServerConfig,
     localPath: string,
     remotePath: string
   ): Promise<void> {
-    const scpArgs = [
-      ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
-      "-o",
-      "StrictHostKeyChecking=no",
-      localPath,
-      `${server.sshUser}@${server.sshHost}:${remotePath}`,
-    ];
-
-    await $`scp ${scpArgs}`;
+    await this.remoteClient.copyToServer(server, localPath, remotePath);
   }
 
   async downloadFileAndCleanup(
@@ -37,22 +28,14 @@ export class SshFileOperations implements IFileOperations {
       return;
     }
 
-    const scpArgs = [
-      ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
-      "-o",
-      "StrictHostKeyChecking=no",
-      remoteFile,
-      localPath,
-    ];
-
-    await $`scp ${scpArgs}`;
+    await this.remoteClient.copyFromServer(server, remoteFile, localPath);
     await this.removeFile(server, remotePath);
     const filename = filenameWithoutExt(remotePath);
     if (!filename) {
       this.log(`Could not extract filename from output path: ${remotePath}`);
       return;
     }
-    const successFile = join(server.remoteSuccessDir, filename);
+    const successFile = `${server.remoteSuccessDir}/${filename}`;
     await this.removeFile(server, successFile);
   }
 
@@ -61,7 +44,7 @@ export class SshFileOperations implements IFileOperations {
     remotePath: string
   ): Promise<boolean> {
     try {
-      await this.remoteExecutor.execute(server, `test -f "${remotePath}"`);
+      await this.remoteClient.execute(server, `test -f "${remotePath}"`);
       return true;
     } catch {
       return false;
@@ -82,7 +65,7 @@ export class SshFileOperations implements IFileOperations {
       const localSize = (await Bun.file(localPath).size).toString();
 
       const remoteSize = (
-        await this.remoteExecutor.execute(
+        await this.remoteClient.execute(
           server,
           `stat -c%s "${remotePath}" 2>/dev/null || echo "0"`
         )
@@ -112,7 +95,7 @@ export class SshFileOperations implements IFileOperations {
     server: ServerConfig,
     outputFile: string
   ): Promise<boolean> {
-    const remoteFile = join(server.copyFrom, basename(outputFile));
+    const remoteFile = `${server.copyFrom}/${basename(outputFile)}`;
     const fileExists = await this.checkFileExists(server, remoteFile);
     if (!fileExists) {
       return false;
@@ -123,7 +106,7 @@ export class SshFileOperations implements IFileOperations {
       this.log(`Could not extract filename from output path: ${remoteFile}`);
       return false;
     }
-    const successFile = join(server.remoteSuccessDir, filename);
+    const successFile = `${server.remoteSuccessDir}/${filename}`;
     const successExists = await this.checkFileExists(server, successFile);
     if (!successExists) {
       return false;
@@ -133,7 +116,7 @@ export class SshFileOperations implements IFileOperations {
 
   async removeFile(server: ServerConfig, remoteFile: string): Promise<void> {
     try {
-      await this.remoteExecutor.execute(server, `rm -f "${remoteFile}"`);
+      await this.remoteClient.execute(server, `rm -f "${remoteFile}"`);
     } catch (error) {
       this.log(`Warning: Failed to delete remote file ${remoteFile}: ${error}`);
     }
@@ -144,12 +127,12 @@ export class SshFileOperations implements IFileOperations {
     remotePath: string
   ): Promise<boolean> {
     try {
-      const size1 = await this.remoteExecutor.execute(
+      const size1 = await this.remoteClient.execute(
         server,
         `stat -c%s "${remotePath}" 2>/dev/null || echo "0"`
       );
       await Bun.sleep(3000);
-      const size2 = await this.remoteExecutor.execute(
+      const size2 = await this.remoteClient.execute(
         server,
         `stat -c%s "${remotePath}" 2>/dev/null || echo "0"`
       );

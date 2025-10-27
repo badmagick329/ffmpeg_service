@@ -3,7 +3,7 @@ import {
   CommandFileWatcher,
   RemoteJobDispatcher,
   SshFileOperations,
-  SshRemoteExecutor,
+  SshClient,
 } from "@/remote-job-dispatch";
 
 async function main() {
@@ -15,8 +15,8 @@ async function main() {
     process.exit(1);
   }
 
-  const remoteExecutor = new SshRemoteExecutor();
-  const fileOperations = new SshFileOperations(remoteExecutor);
+  const remoteClient = new SshClient();
+  const fileOperations = new SshFileOperations(remoteClient);
   const dispatcher = new RemoteJobDispatcher(
     fileOperations,
     config.localOutputDir
