@@ -162,7 +162,9 @@ export class RemoteJobDispatcher {
 
       if (completedFiles.length < outputFiles.length) {
         this.log(
-          `${server.sshHost} - Completed: ${completedFiles.length}/${outputFiles.length} files`
+          `[${new Date().toISOString().split("Z")[0]?.replace("T", " ")}] - ${
+            server.sshHost
+          } - Completed: ${completedFiles.length}/${outputFiles.length} files`
         );
       }
     }
