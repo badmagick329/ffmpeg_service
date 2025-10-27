@@ -4,7 +4,6 @@ import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import type { IFFmpegCommandRunner } from "@/ffmpeg-job-executor/infra/ffmpeg-command-runner";
 import type { LoggerPort } from "@/common/logger-port";
 import { basename, join } from "node:path";
-import { filenameWithoutExt } from "@/common/path-utils";
 
 export class FFmpegJobExecutor {
   private readonly log: LoggerPort;

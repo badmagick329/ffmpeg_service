@@ -23,37 +23,13 @@ export class SshClient implements IRemoteClient {
       from,
       to,
     ];
-    const result = await $`scp ${scpArgs}`.text();
-    return result;
-  }
-  async copyToServer(
-    server: ServerConfig,
-    localPath: string,
-    remotePath: string
-  ): Promise<string> {
-    const scpArgs = [
-      ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
-      "-o",
-      "StrictHostKeyChecking=no",
-      localPath,
-      `${server.sshUser}@${server.sshHost}:${remotePath}`,
-    ];
 
-    return await $`scp ${scpArgs}`.text();
-  }
-  async copyFromServer(
-    server: ServerConfig,
-    localPath: string,
-    remotePath: string
-  ): Promise<string> {
-    const scpArgs = [
-      ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
-      "-o",
-      "StrictHostKeyChecking=no",
-      `${server.sshUser}@${server.sshHost}:${remotePath}`,
-      localPath,
-    ];
-
-    return await $`scp ${scpArgs}`.text();
+    console.log(`Running scp command:\n${`scp ${scpArgs.join(" ")}`}`);
+    try {
+      return await $`scp ${scpArgs}`.text();
+    } catch (error) {
+      console.error("SCP Error:", error);
+      throw error;
+    }
   }
 }

@@ -2,11 +2,11 @@ import type { ServerConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import { existsSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { basename, resolve, join } from "node:path";
 
 export class RemoteJobDispatcher {
   private readonly log = console.log;
-  private static POLLING_INTERVAL = 10000;
+  private static POLLING_INTERVAL = 30000;
 
   constructor(
     private fileOperations: IFileOperations,
@@ -149,7 +149,7 @@ export class RemoteJobDispatcher {
         this.log(
           `Downloading file from ${server.sshHost}: ${basename(outputFile)}`
         );
-        const localFile = resolve(this.localOutputDir, basename(outputFile));
+        const localFile = join(this.localOutputDir, basename(outputFile));
         await this.fileOperations.downloadFileAndCleanup(
           server,
           remoteFile,

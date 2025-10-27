@@ -2,7 +2,6 @@ import type { ServerConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
 import type { IRemoteClient } from "@/remote-job-dispatch/core/iremote-client";
 import { basename } from "path";
-import { filenameWithoutExt } from "@/common/path-utils";
 
 export class SshFileOperations implements IFileOperations {
   private readonly log = console.log;
@@ -14,7 +13,8 @@ export class SshFileOperations implements IFileOperations {
     localPath: string,
     remotePath: string
   ): Promise<void> {
-    await this.remoteClient.copyToServer(server, localPath, remotePath);
+    const remoteFile = `${server.sshUser}@${server.sshHost}:${remotePath}`;
+    await this.remoteClient.copy(server, localPath, remoteFile);
   }
 
   async downloadFileAndCleanup(
@@ -28,14 +28,11 @@ export class SshFileOperations implements IFileOperations {
       return;
     }
 
-    await this.remoteClient.copyFromServer(server, remoteFile, localPath);
+    await this.remoteClient.copy(server, remoteFile, localPath);
     await this.removeFile(server, remotePath);
-    const filename = filenameWithoutExt(remotePath);
-    if (!filename) {
-      this.log(`Could not extract filename from output path: ${remotePath}`);
-      return;
-    }
-    const successFile = `${server.remoteSuccessDir}/${filename}`;
+    const successFile = `${server.remoteSuccessDir}/${basename(
+      remotePath
+    )}.done`;
     await this.removeFile(server, successFile);
   }
 
@@ -101,12 +98,9 @@ export class SshFileOperations implements IFileOperations {
       return false;
     }
 
-    const filename = filenameWithoutExt(remoteFile);
-    if (!filename) {
-      this.log(`Could not extract filename from output path: ${remoteFile}`);
-      return false;
-    }
-    const successFile = `${server.remoteSuccessDir}/${filename}`;
+    const successFile = `${server.remoteSuccessDir}/${basename(
+      remoteFile
+    )}.done`;
     const successExists = await this.checkFileExists(server, successFile);
     if (!successExists) {
       return false;
@@ -119,33 +113,6 @@ export class SshFileOperations implements IFileOperations {
       await this.remoteClient.execute(server, `rm -f "${remoteFile}"`);
     } catch (error) {
       this.log(`Warning: Failed to delete remote file ${remoteFile}: ${error}`);
-    }
-  }
-
-  private async isFileStable(
-    server: ServerConfig,
-    remotePath: string
-  ): Promise<boolean> {
-    try {
-      const size1 = await this.remoteClient.execute(
-        server,
-        `stat -c%s "${remotePath}" 2>/dev/null || echo "0"`
-      );
-      await Bun.sleep(3000);
-      const size2 = await this.remoteClient.execute(
-        server,
-        `stat -c%s "${remotePath}" 2>/dev/null || echo "0"`
-      );
-
-      const sizeStable = size1.trim() === size2.trim() && size1.trim() !== "0";
-
-      if (!sizeStable) {
-        return false;
-      }
-
-      return true;
-    } catch {
-      return false;
     }
   }
 }
