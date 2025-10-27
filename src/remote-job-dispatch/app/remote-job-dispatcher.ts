@@ -1,9 +1,8 @@
 import type { ServerConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
-import type { IRemoteExecutor } from "@/remote-job-dispatch/core/iremote-executor";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
-import { existsSync } from "fs";
-import { basename, resolve } from "path";
+import { existsSync } from "node:fs";
+import { basename, resolve } from "node:path";
 
 export class RemoteJobDispatcher {
   private readonly log = console.log;

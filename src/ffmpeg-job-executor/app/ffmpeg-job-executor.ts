@@ -1,10 +1,10 @@
 import type { ICmdTranslator } from "@/command-translation/cmd-translator";
 import { JobLifecycleService } from "@/jobs";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
-import type { IFFmpegCommandRunner } from "@/ffmpeg-job-listener/infra/ffmpeg-command-runner";
+import type { IFFmpegCommandRunner } from "@/ffmpeg-job-executor/infra/ffmpeg-command-runner";
 import type { LoggerPort } from "@/common/logger-port";
 
-export class FFmpegJobListener {
+export class FFmpegJobExecutor {
   private readonly log: LoggerPort;
   constructor(
     private readonly runner: IFFmpegCommandRunner,
@@ -16,7 +16,7 @@ export class FFmpegJobListener {
     this.log = logger.withContext({ service: "FFmpegJobListener" });
   }
 
-  async listen() {
+  async start() {
     this.log.info(
       `Starting FFmpeg job listener with polling interval: ${this.pollInterval}ms`,
       {
@@ -46,7 +46,6 @@ export class FFmpegJobListener {
   }
 
   private async run({ cmd, debug = false }: { cmd: string; debug: boolean }) {
-    // TODO: Add error handling and logging
     const parsed = ParsedCmd.create(cmd);
     const localizedParse = this.cmdTranslator.localizeCmd(parsed);
     return await this.runner.run({ cmd: localizedParse.cmd, debug });

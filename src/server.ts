@@ -9,8 +9,8 @@ import {
 import {
   FFmpegCommandRunner,
   FsCommandsWatchService,
-  FFmpegJobListener,
-} from "@/ffmpeg-job-listener";
+  FFmpegJobExecutor,
+} from "@/ffmpeg-job-executor";
 import { FsWatcher } from "@/fs-watcher";
 import { WinstonLogger } from "@/infra/winston-logger";
 import { AppState } from "@/tui/lib/app-state";
@@ -34,7 +34,7 @@ async function main() {
 
   startInputFilesWatcher(inputsRepo, config.inputFilesReconciliationInterval);
   startFsCommandsWatcher(cmdTranslator, jobsRepo);
-  startFFmpegJobListener(
+  startFFmpegJobExecutor(
     cmdTranslator,
     jobLifecycleService,
     config.jobPollInterval
@@ -82,20 +82,20 @@ function startFsCommandsWatcher(
   fileCommandsWatcher.start();
 }
 
-function startFFmpegJobListener(
+function startFFmpegJobExecutor(
   cmdTranslator: CmdTranslator,
   jobLifecycleService: JobLifecycleService,
   pollInterval: number
 ) {
   const cmdRunner = new FFmpegCommandRunner(cmdTranslator, appState, logger);
-  const ffmpegJobListener = new FFmpegJobListener(
+  const ffmpegJobExecutor = new FFmpegJobExecutor(
     cmdRunner,
     cmdTranslator,
     jobLifecycleService,
     pollInterval,
     logger
   );
-  ffmpegJobListener.listen();
+  ffmpegJobExecutor.start();
 }
 
 main();
