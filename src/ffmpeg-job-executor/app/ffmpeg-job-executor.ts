@@ -40,13 +40,8 @@ export class FFmpegJobExecutor {
           );
         }
         const cmd = ParsedCmd.create(job.localizedCmd);
-        const filename = filenameWithoutExt(cmd.output);
-        if (!filename) {
-          throw new Error(
-            `Could not extract filename from output path: ${cmd.output}`
-          );
-        }
-        const successFile = Bun.file(join(this.successDir, filename));
+        const successName = `${basename(cmd.output)}.done`;
+        const successFile = Bun.file(join(this.successDir, successName));
         await successFile.write(`Job ${job.id} completed successfully.`);
 
         this.log.info(`Job ${job.id} completed successfully.`, { result });
