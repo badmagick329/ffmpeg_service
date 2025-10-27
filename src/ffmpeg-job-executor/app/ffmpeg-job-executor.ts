@@ -4,6 +4,7 @@ import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import type { IFFmpegCommandRunner } from "@/ffmpeg-job-executor/infra/ffmpeg-command-runner";
 import type { LoggerPort } from "@/common/logger-port";
 import { basename, join } from "node:path";
+import { filenameWithoutExt } from "@/common/path-utils";
 
 export class FFmpegJobExecutor {
   private readonly log: LoggerPort;
@@ -39,13 +40,12 @@ export class FFmpegJobExecutor {
           );
         }
         const cmd = ParsedCmd.create(job.localizedCmd);
-        const filenameMatch = basename(cmd.output).match(/(.+)\.[^.]+$/);
-        if (!filenameMatch) {
+        const filename = filenameWithoutExt(cmd.output);
+        if (!filename) {
           throw new Error(
             `Could not extract filename from output path: ${cmd.output}`
           );
         }
-        const filename = filenameMatch[1]!;
         const successFile = Bun.file(join(this.successDir, filename));
         await successFile.write(`Job ${job.id} completed successfully.`);
 

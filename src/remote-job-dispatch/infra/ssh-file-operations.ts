@@ -2,7 +2,8 @@ import type { ServerConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
 import type { IRemoteExecutor } from "@/remote-job-dispatch/core/iremote-executor";
 import { $ } from "bun";
-import { basename } from "path";
+import { basename, join } from "path";
+import { filenameWithoutExt } from "@/common/path-utils";
 
 export class SshFileOperations implements IFileOperations {
   private readonly log = console.log;
@@ -31,6 +32,11 @@ export class SshFileOperations implements IFileOperations {
     localPath: string
   ): Promise<void> {
     const remoteFile = `${server.sshUser}@${server.sshHost}:${remotePath}`;
+    if (!(await this.checkFileExists(server, remotePath))) {
+      this.log(`Remote file does not exist: ${remotePath}`);
+      return;
+    }
+
     const scpArgs = [
       ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
       "-o",
@@ -41,6 +47,13 @@ export class SshFileOperations implements IFileOperations {
 
     await $`scp ${scpArgs}`;
     await this.removeFile(server, remotePath);
+    const filename = filenameWithoutExt(remotePath);
+    if (!filename) {
+      this.log(`Could not extract filename from output path: ${remotePath}`);
+      return;
+    }
+    const successFile = join(server.remoteSuccessDir, filename);
+    await this.removeFile(server, successFile);
   }
 
   async checkFileExists(
@@ -99,13 +112,23 @@ export class SshFileOperations implements IFileOperations {
     server: ServerConfig,
     outputFile: string
   ): Promise<boolean> {
-    const remoteFile = `${server.copyFrom}/${basename(outputFile)}`;
+    const remoteFile = join(server.copyFrom, basename(outputFile));
     const fileExists = await this.checkFileExists(server, remoteFile);
     if (!fileExists) {
       return false;
     }
 
-    return await this.isFileStable(server, remoteFile);
+    const filename = filenameWithoutExt(remoteFile);
+    if (!filename) {
+      this.log(`Could not extract filename from output path: ${remoteFile}`);
+      return false;
+    }
+    const successFile = join(server.remoteSuccessDir, filename);
+    const successExists = await this.checkFileExists(server, successFile);
+    if (!successExists) {
+      return false;
+    }
+    return true;
   }
 
   async removeFile(server: ServerConfig, remoteFile: string): Promise<void> {
