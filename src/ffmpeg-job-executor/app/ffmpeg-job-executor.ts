@@ -28,7 +28,7 @@ export class FFmpegJobExecutor {
     while (true) {
       const job = this.jobLifecycleService.claim();
       if (!job) {
-        await new Promise((resolve) => setTimeout(resolve, this.pollInterval));
+        await Bun.sleep(this.pollInterval);
         continue;
       }
       try {
