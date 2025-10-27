@@ -120,8 +120,25 @@ class FFmpegClient {
       `Uploading ${inputFiles.length} input files to ${server.sshHost}...`
     );
 
+    let skipped = 0;
     const uploadPromises = inputFiles.map(async (file) => {
       const remoteFile = `${server.copyTo}/${basename(file)}`;
+
+      const shouldUpload = await this.shouldUploadFile(
+        server,
+        file,
+        remoteFile
+      );
+      if (!shouldUpload) {
+        this.log(
+          `Skipping ${basename(file)} - already exists with matching size on ${
+            server.sshHost
+          }`
+        );
+        skipped++;
+        return file;
+      }
+
       await this.runScp(
         server,
         file,
@@ -148,8 +165,9 @@ class FFmpegClient {
       });
     }
 
+    const uploaded = successful - skipped;
     this.log(
-      `${successful}/${inputFiles.length} input files uploaded to ${server.sshHost}`
+      `${uploaded} uploaded, ${skipped} skipped, ${inputFiles.length} total for ${server.sshHost}`
     );
   }
 
@@ -268,6 +286,46 @@ class FFmpegClient {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  private async shouldUploadFile(
+    server: ServerConfig,
+    localFile: string,
+    remoteFile: string
+  ): Promise<boolean> {
+    try {
+      const exists = await this.checkRemoteFileExists(server, remoteFile);
+      if (!exists) {
+        return true;
+      }
+
+      const localSize = (await Bun.file(localFile).size).toString();
+
+      const remoteSize = (
+        await this.runSsh(
+          server,
+          `stat -c%s "${remoteFile}" 2>/dev/null || echo "0"`
+        )
+      ).trim();
+
+      if (localSize !== remoteSize) {
+        this.log(
+          `Size mismatch for ${basename(
+            localFile
+          )}: local=${localSize}, remote=${remoteSize}`
+        );
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      this.log(
+        `Error encountered while verifying ${basename(
+          localFile
+        )} on remote: ${error}`
+      );
+      return true;
     }
   }
 
