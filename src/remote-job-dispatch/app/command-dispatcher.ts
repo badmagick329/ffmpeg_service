@@ -3,6 +3,7 @@ import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operation
 import { ClientStateManager } from "@/remote-job-dispatch/core/client-state-manager";
 import { ServerSelector } from "@/remote-job-dispatch/core/server-selector";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
+import { createProgressBar } from "@/remote-job-dispatch/utils/progress-bar";
 import { readdir, exists } from "node:fs/promises";
 import { basename, resolve, join } from "path";
 
@@ -130,7 +131,7 @@ export class CommandDispatcher {
       return { reason: serverResult.reason, kind: "skip" };
     }
     const server = serverResult.server;
-    this.log(`  Target server: ${server.sshHost}`);
+    this.log(`  Target server: ${server.serverName}`);
     return await this.processCommands(server, filePath);
   }
 
@@ -152,16 +153,16 @@ export class CommandDispatcher {
       this.log(`  ✗ ${reason}`);
       this.log(
         `    Available servers: ${this.serverConfigs
-          .map((s) => s.sshHost)
+          .map((s) => s.serverName)
           .join(", ")}`
       );
       return { reason, kind: "skip" };
     }
 
-    this.log(`  Target server: ${server.sshHost}`);
+    this.log(`  Target server: ${server.serverName}`);
     // NOTE: Allowing queueing of additional work for now
-    // if (!this.stateManager.isServerIdle(server.sshHost)) {
-    //   const reason = `Server ${server.sshHost} already has pending work`;
+    // if (!this.stateManager.isServerIdle(server.serverName)) {
+    //   const reason = `Server ${server.serverName} already has pending work`;
     //   this.log(`  ✗ ${reason}`);
     //   this.log(
     //     `    Wait for current batch to complete before dispatching new work`
@@ -207,17 +208,17 @@ export class CommandDispatcher {
     for (const outputFile of outputFiles) {
       const remoteFile = `${server.copyFrom}/${basename(outputFile)}`;
 
-      await this.stateManager.addPendingDownload(server.sshHost, {
+      await this.stateManager.addPendingDownload(server.serverName, {
         outputFile,
         remoteFile,
       });
     }
 
-    this.log(`  ✓ Dispatched to ${server.sshHost}`);
+    this.log(`  ✓ Dispatched to ${server.serverName}`);
 
     return {
       kind: "ok",
-      server: server.sshHost,
+      server: server.serverName,
       inputFilesUploaded: uploadedCount,
       outputFilesExpected: outputFiles.length,
     };
@@ -276,7 +277,7 @@ export class CommandDispatcher {
     server: ServerConfig,
     filePath: string
   ): Promise<void> {
-    this.log(`  Uploading command file to ${server.sshHost}...`);
+    this.log(`  Uploading command file to ${server.serverName}...`);
 
     const remoteFile = `${server.remoteCmdsDir}/${basename(filePath)}`;
     await this.fileOperations.uploadFile(server, filePath, remoteFile);
@@ -312,12 +313,22 @@ export class CommandDispatcher {
         );
         skipped++;
       } else {
-        await this.fileOperations.uploadFile(server, file, remoteFile);
+        this.log(`    ↑ Uploading: ${basename(file)}`);
+        const progressBar = createProgressBar();
+
+        await this.fileOperations.uploadFile(
+          server,
+          file,
+          remoteFile,
+          progressBar.show
+        );
+
+        progressBar.finish();
         uploaded++;
         this.log(`    ✓ Uploaded: ${basename(file)}`);
       }
 
-      await this.stateManager.addUploadedInputFile(server.sshHost, {
+      await this.stateManager.addUploadedInputFile(server.serverName, {
         localFile: file,
         remoteFile,
       });

@@ -1,5 +1,6 @@
 import { config } from "@/infra/config";
-import { SshFileOperations, SshClient } from "@/remote-job-dispatch";
+import { SshFileOperations } from "@/remote-job-dispatch";
+import { Ssh2Client } from "@/remote-job-dispatch/infra/ssh2-client";
 import { ClientStateManager } from "@/remote-job-dispatch/core/client-state-manager";
 import { DownloadManager } from "@/remote-job-dispatch/app/download-manager";
 import { CommandDispatcher } from "@/remote-job-dispatch/app/command-dispatcher";
@@ -10,9 +11,12 @@ async function main() {
     process.exit(1);
   }
 
-  const remoteClient = new SshClient();
+  const remoteClient = new Ssh2Client();
   const fileOperations = new SshFileOperations(remoteClient);
-  const stateManager = await ClientStateManager.create(config.clientStateFile);
+  const stateManager = await ClientStateManager.create(
+    config.clientStateFile,
+    config.serverConfigs
+  );
 
   await processPendingDownloads(fileOperations, stateManager);
   await dispatchNewCommands(fileOperations, stateManager);

@@ -1,16 +1,19 @@
 import type { ServerConfig } from "@/infra/config";
+import type { ProgressCallback } from "./iremote-client";
 
 export interface IFileOperations {
   uploadFile(
     server: ServerConfig,
     localPath: string,
-    remotePath: string
+    remotePath: string,
+    onProgress?: ProgressCallback
   ): Promise<void>;
 
   downloadFileAndCleanup(
     server: ServerConfig,
     remotePath: string,
-    localPath: string
+    localPath: string,
+    onProgress?: ProgressCallback
   ): Promise<void>;
 
   checkFileExists(server: ServerConfig, remotePath: string): Promise<boolean>;

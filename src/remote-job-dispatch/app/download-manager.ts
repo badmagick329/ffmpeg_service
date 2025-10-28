@@ -2,6 +2,7 @@ import type { ServerConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
 import type { PendingDownload } from "@/remote-job-dispatch/core/client-state-manager";
 import { ClientStateManager } from "@/remote-job-dispatch/core/client-state-manager";
+import { createProgressBar } from "@/remote-job-dispatch/utils/progress-bar";
 import { basename } from "path";
 
 export interface DownloadSummary {
@@ -58,9 +59,9 @@ export class DownloadManager {
     );
 
     for (const serverHost of serversWithWork) {
-      const server = this.findServerConfig(serverHost);
+      const server = this.findServerByName(serverHost);
       if (!server) {
-        this.log(`⚠️ Server config not found for: ${serverHost}`);
+        this.log(`⚠️  Warning: State file references unknown server "${serverHost}"`);
         continue;
       }
 
@@ -104,8 +105,8 @@ export class DownloadManager {
     return interrupted.length;
   }
 
-  private findServerConfig(hostname: string): ServerConfig | undefined {
-    return this.serverConfigs.find((s) => s.sshHost === hostname);
+  private findServerByName(serverName: string): ServerConfig | undefined {
+    return this.serverConfigs.find((s) => s.serverName === serverName);
   }
 
   private async processServerDownloads(server: ServerConfig): Promise<{
@@ -122,18 +123,18 @@ export class DownloadManager {
     };
 
     const waitingDownloads = this.stateManager.getWaitingDownloads(
-      server.sshHost
+      server.serverName
     );
     const allDownloads = this.stateManager.getAllPendingDownloads(
-      server.sshHost
+      server.serverName
     );
 
     if (waitingDownloads.length === 0 && allDownloads.length > 0) {
       this.log(
-        `Server ${server.sshHost}: No waiting downloads (all completed/interrupted)`
+        `Server ${server.serverName}: No waiting downloads (all completed/interrupted)`
       );
 
-      if (this.stateManager.areAllDownloadsCompleted(server.sshHost)) {
+      if (this.stateManager.areAllDownloadsCompleted(server.serverName)) {
         await this.cleanupServerInputFiles(server);
         result.allCompleted = true;
       }
@@ -142,7 +143,7 @@ export class DownloadManager {
     }
 
     this.log(
-      `\nServer ${server.sshHost}: Checking ${waitingDownloads.length} file(s)...`
+      `\nServer ${server.serverName}: Checking ${waitingDownloads.length} file(s)...`
     );
 
     for (const download of waitingDownloads) {
@@ -158,7 +159,11 @@ export class DownloadManager {
 
       try {
         this.log(`  ↓ Downloading: ${basename(download.outputFile)}...`);
-        await this.downloadReadyFile(server, download);
+        const progressBar = createProgressBar();
+
+        await this.downloadReadyFile(server, download, progressBar.show);
+
+        progressBar.finish();
         result.downloaded++;
         this.log(`  ✓ Downloaded: ${basename(download.outputFile)}`);
       } catch (error) {
@@ -168,7 +173,7 @@ export class DownloadManager {
       }
     }
 
-    if (this.stateManager.areAllDownloadsCompleted(server.sshHost)) {
+    if (this.stateManager.areAllDownloadsCompleted(server.serverName)) {
       await this.cleanupServerInputFiles(server);
       result.allCompleted = true;
     }
@@ -178,10 +183,11 @@ export class DownloadManager {
 
   private async downloadReadyFile(
     server: ServerConfig,
-    download: PendingDownload
+    download: PendingDownload,
+    onProgress?: (progress: any) => void
   ): Promise<void> {
     await this.stateManager.markDownloadInProgress(
-      server.sshHost,
+      server.serverName,
       download.outputFile
     );
 
@@ -189,16 +195,17 @@ export class DownloadManager {
       await this.fileOperations.downloadFileAndCleanup(
         server,
         download.remoteFile,
-        download.outputFile
+        download.outputFile,
+        onProgress
       );
 
       await this.stateManager.markDownloadCompleted(
-        server.sshHost,
+        server.serverName,
         download.outputFile
       );
     } catch (error) {
       await this.stateManager.markDownloadInterrupted(
-        server.sshHost,
+        server.serverName,
         download.outputFile
       );
       throw error;
@@ -207,17 +214,17 @@ export class DownloadManager {
 
   private async cleanupServerInputFiles(server: ServerConfig): Promise<void> {
     const inputFiles = this.stateManager.getAllUploadedInputFiles(
-      server.sshHost
+      server.serverName
     );
 
     if (inputFiles.length === 0) {
-      this.log(`Server ${server.sshHost}: No input files to clean up`);
-      await this.stateManager.removeServerState(server.sshHost);
+      this.log(`Server ${server.serverName}: No input files to clean up`);
+      await this.stateManager.removeServerState(server.serverName);
       return;
     }
 
     this.log(
-      `Server ${server.sshHost}: Cleaning up ${inputFiles.length} input file(s)...`
+      `Server ${server.serverName}: Cleaning up ${inputFiles.length} input file(s)...`
     );
 
     let cleaned = 0;
@@ -234,9 +241,10 @@ export class DownloadManager {
     }
 
     this.log(
-      `Server ${server.sshHost}: Cleanup completed (${cleaned} removed, ${failed} failed)`
+      `Server ${server.serverName}: Cleanup completed (${cleaned} removed, ${failed} failed)`
     );
 
-    await this.stateManager.removeServerState(server.sshHost);
+    await this.stateManager.removeServerState(server.serverName);
   }
 }
+

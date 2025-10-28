@@ -1,6 +1,9 @@
 import type { ServerConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
-import type { IRemoteClient } from "@/remote-job-dispatch/core/iremote-client";
+import type {
+  IRemoteClient,
+  ProgressCallback,
+} from "@/remote-job-dispatch/core/iremote-client";
 import { basename } from "path";
 
 export class SshFileOperations implements IFileOperations {
@@ -11,24 +14,24 @@ export class SshFileOperations implements IFileOperations {
   async uploadFile(
     server: ServerConfig,
     localPath: string,
-    remotePath: string
+    remotePath: string,
+    onProgress?: ProgressCallback
   ): Promise<void> {
-    const remoteFile = `${server.sshUser}@${server.sshHost}:${remotePath}`;
-    await this.remoteClient.copy(server, localPath, remoteFile);
+    await this.remoteClient.upload(server, localPath, remotePath, onProgress);
   }
 
   async downloadFileAndCleanup(
     server: ServerConfig,
     remotePath: string,
-    localPath: string
+    localPath: string,
+    onProgress?: ProgressCallback
   ): Promise<void> {
-    const remoteFile = `${server.sshUser}@${server.sshHost}:${remotePath}`;
     if (!(await this.checkFileExists(server, remotePath))) {
       this.log(`Remote file does not exist: ${remotePath}`);
       return;
     }
 
-    await this.remoteClient.copy(server, remoteFile, localPath);
+    await this.remoteClient.download(server, remotePath, localPath, onProgress);
     await this.removeFile(server, remotePath);
     const successFile = `${server.remoteSuccessDir}/${basename(
       remotePath
@@ -41,7 +44,9 @@ export class SshFileOperations implements IFileOperations {
     remotePath: string
   ): Promise<boolean> {
     try {
-      await this.remoteClient.execute(server, `test -f "${remotePath}"`);
+      const escapedPath = remotePath.replace(/'/g, "'\\''");
+      const command = `test -f '${escapedPath}'`;
+      await this.remoteClient.execute(server, command);
       return true;
     } catch {
       return false;
@@ -59,12 +64,13 @@ export class SshFileOperations implements IFileOperations {
         return true;
       }
 
-      const localSize = (await Bun.file(localPath).size).toString();
+      const localSize = Bun.file(localPath).size.toString();
 
+      const escapedPath = remotePath.replace(/'/g, "'\\''");
       const remoteSize = (
         await this.remoteClient.execute(
           server,
-          `stat -c%s "${remotePath}" 2>/dev/null || echo "0"`
+          `stat -c%s '${escapedPath}' 2>/dev/null || echo "0"`
         )
       ).trim();
 
@@ -112,7 +118,8 @@ export class SshFileOperations implements IFileOperations {
 
   async removeFile(server: ServerConfig, remoteFile: string): Promise<void> {
     try {
-      await this.remoteClient.execute(server, `rm -f "${remoteFile}"`);
+      const escapedPath = remoteFile.replace(/'/g, "'\\''");
+      await this.remoteClient.execute(server, `rm -f '${escapedPath}'`);
     } catch (error) {
       this.log(`Warning: Failed to delete remote file ${remoteFile}: ${error}`);
     }

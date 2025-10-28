@@ -52,17 +52,69 @@ export interface InterruptedOperation {
   operation: Operation;
 }
 
+import type { ServerConfig } from "@/infra/config";
+
 export class ClientStateManager {
   private constructor(
     private stateFilePath: string,
     private readonly state: ClientState
   ) {}
 
-  static async create(stateFilePath: string): Promise<ClientStateManager> {
-    return new ClientStateManager(
-      stateFilePath,
-      await ClientStateManager.loadState(stateFilePath)
-    );
+  static async create(
+    stateFilePath: string,
+    serverConfigs: ServerConfig[]
+  ): Promise<ClientStateManager> {
+    let state = await ClientStateManager.loadState(stateFilePath);
+    state = await ClientStateManager.migrateState(state, serverConfigs);
+
+    const manager = new ClientStateManager(stateFilePath, state);
+    // Persist migrated state if migration occurred
+    await manager.saveState();
+
+    return manager;
+  }
+
+  /**
+   * Migrate old state file that used IP addresses as keys to use serverNames
+   */
+  private static async migrateState(
+    state: ClientState,
+    serverConfigs: ServerConfig[]
+  ): Promise<ClientState> {
+    const migratedServers: Record<string, ServerState> = {};
+    let migrationOccurred = false;
+
+    for (const [key, serverState] of Object.entries(state.servers)) {
+      const isIpKey =
+        /^\d+\.\d+\.\d+\.\d+$/.test(key) ||
+        key.includes(".") ||
+        key.includes(":");
+
+      if (isIpKey) {
+        const serverConfig = serverConfigs.find((s) => s.sshHostIP === key);
+        if (serverConfig) {
+          console.log(`Migrating state: ${key} → ${serverConfig.serverName}`);
+          migratedServers[serverConfig.serverName] = serverState;
+          migrationOccurred = true;
+        } else {
+          console.warn(
+            `⚠️  Could not migrate server state for IP: ${key} (no matching config)`
+          );
+          migratedServers[key] = serverState;
+        }
+      } else {
+        migratedServers[key] = serverState;
+      }
+    }
+
+    if (migrationOccurred) {
+      console.log("✓ State migration completed");
+    }
+
+    return {
+      ...state,
+      servers: migratedServers,
+    };
   }
 
   async addPendingDownload(

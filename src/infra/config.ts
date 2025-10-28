@@ -3,9 +3,10 @@ import conf from "../../config.toml";
 import { mkdirSync } from "fs";
 
 export type ServerConfig = {
-  sshHost: string;
+  serverName: string; // Human-friendly identifier (required, must be unique)
+  sshHostIP: string; // IP address or hostname that resolves via DNS
   sshUser: string;
-  sshKeyPath?: string;
+  sshKeyPath: string;
   remoteWorkDir: string;
   remoteCmdsDir: string;
   remoteSuccessDir: string;
@@ -36,6 +37,37 @@ export const config: ConfigType = {
   clientStateFile: conf.clientStateFile,
   successDir: conf.successDir,
 };
+
+function validateServerConfigs(configs: ServerConfig[]): void {
+  const names = new Set<string>();
+  const ips = new Set<string>();
+
+  for (const config of configs) {
+    if (!config.serverName || config.serverName.trim() === "") {
+      throw new Error(
+        `Server config missing serverName (IP: ${config.sshHostIP})`
+      );
+    }
+
+    if (names.has(config.serverName)) {
+      throw new Error(`Duplicate serverName: ${config.serverName}`);
+    }
+    names.add(config.serverName);
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(config.serverName)) {
+      throw new Error(
+        `Invalid serverName "${config.serverName}": must contain only letters, numbers, hyphens, and underscores`
+      );
+    }
+
+    if (ips.has(config.sshHostIP)) {
+      console.warn(`⚠️  Warning: Duplicate sshHostIP: ${config.sshHostIP}`);
+    }
+    ips.add(config.sshHostIP);
+  }
+}
+
+validateServerConfigs(config.serverConfigs);
 
 export function initDirectories() {
   mkdirSync(config.incomingDir, { recursive: true });

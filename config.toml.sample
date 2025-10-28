@@ -21,17 +21,18 @@ logLevel = 'info'
 logDir = './logs'
 
 # Multiple server configurations for distributed processing
-# File naming convention: include server hostname in command filename
+# File naming convention: include serverName in command filename
 # Examples:
-#   - commands_server1.example.com.txt → goes to server1.example.com
-#   - ffmpeg_server2.ps1 → goes to server2.example.com  
-#   - batch_server1.cmd → goes to server1.example.com
-#   - jobs_server2.example.com.sh → goes to server2.example.com
+#   - commands_server1.txt → goes to server with serverName "server1"
+#   - ffmpeg_mgck.ps1 → goes to server with serverName "mgck"
+#   - batch_dev.cmd → goes to server with serverName "dev"
+#   - jobs_prod.sh → goes to server with serverName "prod"
 
 [[serverConfigs]]
-sshHost = "server1.example.com"
+serverName = "server1"  # Human-friendly name (required, must be unique, alphanumeric + hyphens/underscores only)
+sshHostIP = "192.168.1.100"  # IP address or DNS-resolvable hostname (do not use SSH config aliases)
 sshUser = "username1"
-sshKeyPath = "C:\\Users\\YourUser\\.ssh\\id_rsa"  # Optional
+sshKeyPath = "C:\\Users\\YourUser\\.ssh\\id_rsa"
 remoteWorkDir = "/home/username1/ffmpeg_service"
 remoteCmdsDir = "/home/username1/ffmpeg_service/data/cmds"
 remoteSuccessDir = "/home/username1/ffmpeg_service/work/success"
@@ -39,9 +40,10 @@ copyTo = "/home/username1/ffmpeg_service/work/videos"
 copyFrom = "/home/username1/ffmpeg_service/work/videos_out"
 
 [[serverConfigs]]
-sshHost = "server2.example.com"
+serverName = "server2"  # Human-friendly name (required, must be unique, alphanumeric + hyphens/underscores only)
+sshHostIP = "192.168.1.101"  # IP address or DNS-resolvable hostname (do not use SSH config aliases)
 sshUser = "username2"
-# sshKeyPath not specified
+sshKeyPath = "C:\\Users\\YourUser\\.ssh\\key2"
 remoteWorkDir = "/home/username2/ffmpeg_service"
 remoteCmdsDir = "/home/username2/ffmpeg_service/cmds"
 remoteSuccessDir = "/home/username2/stuff/ffmpeg/success"

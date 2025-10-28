@@ -1,14 +1,17 @@
 import type { ServerConfig } from "@/infra/config";
-import type { IRemoteClient } from "@/remote-job-dispatch/core/iremote-client";
+// import type { IRemoteClient } from "@/remote-job-dispatch/core/iremote-client";
 import { $ } from "bun";
 
-export class SshClient implements IRemoteClient {
+/**
+ * @deprecated Legacy implementation - not used. Use Ssh2Client or SshClient instead.
+ */
+export class SshClient {
   async execute(server: ServerConfig, command: string): Promise<string> {
     const sshArgs = [
       ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
       "-o",
       "StrictHostKeyChecking=no",
-      `${server.sshUser}@${server.sshHost}`,
+      `${server.sshUser}@${server.sshHostIP}`,
       command,
     ];
 
@@ -36,7 +39,7 @@ export class SshClient implements IRemoteClient {
       "-o",
       "StrictHostKeyChecking=no",
       localPath,
-      `${server.sshUser}@${server.sshHost}:${remotePath}`,
+      `${server.sshUser}@${server.sshHostIP}:${remotePath}`,
     ];
 
     return await $`scp ${scpArgs}`.text();
@@ -50,7 +53,7 @@ export class SshClient implements IRemoteClient {
       ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
       "-o",
       "StrictHostKeyChecking=no",
-      `${server.sshUser}@${server.sshHost}:${remotePath}`,
+      `${server.sshUser}@${server.sshHostIP}:${remotePath}`,
       localPath,
     ];
 
