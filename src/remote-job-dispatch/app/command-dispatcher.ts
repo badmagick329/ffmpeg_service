@@ -1,0 +1,332 @@
+import type { ServerConfig } from "@/infra/config";
+import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
+import { ClientStateManager } from "@/remote-job-dispatch/core/client-state-manager";
+import { ServerSelector } from "@/remote-job-dispatch/core/server-selector";
+import { ParsedCmd } from "@/command-translation/parsed-cmd";
+import { readdir, exists } from "node:fs/promises";
+import { basename, resolve, join } from "path";
+
+export interface DispatchSummary {
+  commandFilesProcessed: number;
+  commandFilesSkipped: number;
+  serversDispatched: string[];
+  totalInputFilesUploaded: number;
+  totalOutputFilesExpected: number;
+  errors: string[];
+}
+
+export interface SkipDetails {
+  reason: string;
+  server: string;
+}
+
+export class CommandDispatcher {
+  private readonly log = console.log;
+  private fileOperations: IFileOperations;
+  private stateManager: ClientStateManager;
+  private cmdsInputDir: string;
+  private serverConfigs: ServerConfig[];
+
+  constructor({
+    fileOperations,
+    stateManager,
+    cmdsInputDir,
+    serverConfigs,
+  }: {
+    fileOperations: IFileOperations;
+    stateManager: ClientStateManager;
+    cmdsInputDir: string;
+    serverConfigs: ServerConfig[];
+  }) {
+    this.fileOperations = fileOperations;
+    this.stateManager = stateManager;
+    this.cmdsInputDir = cmdsInputDir;
+    this.serverConfigs = serverConfigs;
+  }
+
+  async dispatchAllCommands(): Promise<DispatchSummary> {
+    const summary: DispatchSummary = {
+      commandFilesProcessed: 0,
+      commandFilesSkipped: 0,
+      serversDispatched: [],
+      totalInputFilesUploaded: 0,
+      totalOutputFilesExpected: 0,
+      errors: [],
+    };
+
+    const commandFiles = await this.scanCommandFiles();
+
+    if (commandFiles.length === 0) {
+      this.log("No non-empty command files found");
+      return summary;
+    }
+
+    this.log(`Found ${commandFiles.length} command file(s) to process...`);
+
+    for (const filePath of commandFiles) {
+      try {
+        const result = await this.processCommandFile(filePath);
+
+        if (result.kind === "skip") {
+          summary.commandFilesSkipped++;
+          summary.errors.push(result.reason || "Unknown reason");
+        } else {
+          summary.commandFilesProcessed++;
+          summary.serversDispatched.push(result.server!);
+          summary.totalInputFilesUploaded += result.inputFilesUploaded || 0;
+          summary.totalOutputFilesExpected += result.outputFilesExpected || 0;
+        }
+      } catch (error) {
+        summary.commandFilesSkipped++;
+        summary.errors.push(`${basename(filePath)}: ${error}`);
+        console.error(`Error processing ${basename(filePath)}:`, error);
+      }
+    }
+
+    return summary;
+  }
+
+  private async scanCommandFiles(): Promise<string[]> {
+    if (!(await exists(this.cmdsInputDir))) {
+      this.log(`Command directory does not exist: ${this.cmdsInputDir}`);
+      return [];
+    }
+
+    const files = await readdir(this.cmdsInputDir);
+    const commandFiles: string[] = [];
+
+    for (const file of files) {
+      const filePath = join(this.cmdsInputDir, file);
+
+      try {
+        const commands = await this.readCommands(filePath);
+        if (commands.length > 0) {
+          commandFiles.push(filePath);
+        }
+      } catch (error) {
+        this.log(`⚠️ Could not stat file: ${file}`);
+      }
+    }
+
+    return commandFiles;
+  }
+
+  private async processCommandFile(filePath: string): Promise<
+    | {
+        kind: "skip";
+        reason: string;
+      }
+    | {
+        kind: "ok";
+        server: string;
+        inputFilesUploaded: number;
+        outputFilesExpected: number;
+      }
+  > {
+    this.log(`\nProcessing: ${basename(filePath)}`);
+
+    const serverResult = await this.getServerOrSkip(filePath);
+    if (serverResult.kind === "skip") {
+      return { reason: serverResult.reason, kind: "skip" };
+    }
+    const server = serverResult.server;
+    this.log(`  Target server: ${server.sshHost}`);
+    return await this.processCommands(server, filePath);
+  }
+
+  private async getServerOrSkip(filePath: string): Promise<
+    | {
+        server: ServerConfig;
+        kind: "ok";
+      }
+    | {
+        kind: "skip";
+        reason: string;
+      }
+  > {
+    const serverSelector = new ServerSelector(this.serverConfigs);
+    const server = serverSelector.selectServer(filePath);
+
+    if (!server) {
+      const reason = `No matching server found for file: ${basename(filePath)}`;
+      this.log(`  ✗ ${reason}`);
+      this.log(
+        `    Available servers: ${this.serverConfigs
+          .map((s) => s.sshHost)
+          .join(", ")}`
+      );
+      return { reason, kind: "skip" };
+    }
+
+    this.log(`  Target server: ${server.sshHost}`);
+    // NOTE: Allowing queueing of additional work for now
+    // if (!this.stateManager.isServerIdle(server.sshHost)) {
+    //   const reason = `Server ${server.sshHost} already has pending work`;
+    //   this.log(`  ✗ ${reason}`);
+    //   this.log(
+    //     `    Wait for current batch to complete before dispatching new work`
+    //   );
+    //   return { skipped: true, reason };
+    // }
+    return { server, kind: "ok" };
+  }
+
+  private async processCommands(
+    server: ServerConfig,
+    filePath: string
+  ): Promise<
+    | {
+        kind: "skip";
+        reason: string;
+      }
+    | {
+        kind: "ok";
+        server: string;
+        inputFilesUploaded: number;
+        outputFilesExpected: number;
+      }
+  > {
+    const commands = await this.readCommands(filePath);
+    if (commands.length === 0) {
+      const reason = "No valid commands found in file";
+      this.log(`  ✗ ${reason}`);
+      return { kind: "skip", reason };
+    }
+
+    this.log(`  Found ${commands.length} command(s)`);
+
+    const inputFiles = await this.extractInputFiles(commands);
+    const outputFiles = this.extractOutputFiles(commands);
+
+    this.log(`  Input files: ${inputFiles.length}`);
+    this.log(`  Output files expected: ${outputFiles.length}`);
+
+    await this.uploadCommandFile(server, filePath);
+    const uploadedCount = await this.uploadInputFiles(server, inputFiles);
+
+    for (const outputFile of outputFiles) {
+      const remoteFile = `${server.copyFrom}/${basename(outputFile)}`;
+
+      await this.stateManager.addPendingDownload(server.sshHost, {
+        outputFile,
+        remoteFile,
+      });
+    }
+
+    this.log(`  ✓ Dispatched to ${server.sshHost}`);
+
+    return {
+      kind: "ok",
+      server: server.sshHost,
+      inputFilesUploaded: uploadedCount,
+      outputFilesExpected: outputFiles.length,
+    };
+  }
+
+  private async readCommands(filePath: string): Promise<string[]> {
+    try {
+      const content = await Bun.file(filePath).text();
+      return content
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith("#"));
+    } catch (error) {
+      console.error(`Error reading command file ${filePath}:`, error);
+      return [];
+    }
+  }
+
+  private async extractInputFiles(commands: string[]): Promise<string[]> {
+    const inputFiles: string[] = [];
+
+    for (const cmd of commands) {
+      try {
+        const parsed = ParsedCmd.create(cmd);
+        const inputFile = resolve(parsed.input);
+
+        if (await exists(inputFile)) {
+          inputFiles.push(inputFile);
+        } else {
+          this.log(`  ⚠️ Input file not found: ${inputFile}`);
+        }
+      } catch (error) {
+        this.log(`  ⚠️ Could not parse command: ${cmd}`);
+      }
+    }
+
+    return [...new Set(inputFiles)];
+  }
+
+  private extractOutputFiles(commands: string[]): string[] {
+    const outputFiles: string[] = [];
+
+    for (const cmd of commands) {
+      try {
+        const parsed = ParsedCmd.create(cmd);
+        outputFiles.push(parsed.output);
+      } catch (error) {
+        console.error(`Could not parse command for output file: ${cmd}`);
+      }
+    }
+
+    return outputFiles;
+  }
+
+  private async uploadCommandFile(
+    server: ServerConfig,
+    filePath: string
+  ): Promise<void> {
+    this.log(`  Uploading command file to ${server.sshHost}...`);
+
+    const remoteFile = `${server.remoteCmdsDir}/${basename(filePath)}`;
+    await this.fileOperations.uploadFile(server, filePath, remoteFile);
+
+    this.log(`  ✓ Command file uploaded`);
+  }
+
+  private async uploadInputFiles(
+    server: ServerConfig,
+    inputFiles: string[]
+  ): Promise<number> {
+    if (inputFiles.length === 0) {
+      return 0;
+    }
+
+    this.log(`  Uploading ${inputFiles.length} input file(s)...`);
+
+    let uploaded = 0;
+    let skipped = 0;
+
+    for (const file of inputFiles) {
+      const remoteFile = `${server.copyTo}/${basename(file)}`;
+
+      const shouldUpload = await this.fileOperations.shouldUploadFile(
+        server,
+        file,
+        remoteFile
+      );
+
+      if (!shouldUpload) {
+        this.log(
+          `    Skipping ${basename(file)} - already exists with matching size`
+        );
+        skipped++;
+      } else {
+        await this.fileOperations.uploadFile(server, file, remoteFile);
+        uploaded++;
+        this.log(`    ✓ Uploaded: ${basename(file)}`);
+      }
+
+      await this.stateManager.addUploadedInputFile(server.sshHost, {
+        localFile: file,
+        remoteFile,
+      });
+    }
+
+    this.log(
+      `  ${uploaded} uploaded, ${skipped} skipped, ${inputFiles.length} total`
+    );
+
+    return uploaded;
+  }
+}

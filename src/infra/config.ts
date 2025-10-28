@@ -21,7 +21,7 @@ type ConfigType = {
   inputFilesReconciliationInterval: number;
   logConfig: LogConfig;
   serverConfigs: ServerConfig[];
-  localOutputDir: string;
+  clientStateFile: string;
   successDir: string;
 };
 
@@ -33,7 +33,7 @@ export const config: ConfigType = {
   inputFilesReconciliationInterval: conf.inputFilesReconciliationInterval,
   logConfig: conf.logConfig,
   serverConfigs: conf.serverConfigs,
-  localOutputDir: conf.localOutputDir,
+  clientStateFile: conf.clientStateFile,
   successDir: conf.successDir,
 };
 

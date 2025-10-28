@@ -2,10 +2,12 @@ incomingDir = "./data/incoming"
 outgoingDir = "./data/outgoing"
 
 # This is where the completed files will be downloaded to
-localOutputDir = "C:\\local\\output\\directory"
 
 # This is where the files with ffmpeg commands are read from
 cmdsInputDir = './data/cmds'
+
+# Client state file to track pending operations
+clientStateFile = "./client-state.json"
 
 successDir = "./data/success"
 

@@ -15,8 +15,4 @@ export class ServerSelector {
     }
     return undefined;
   }
-
-  getAllServers(): ServerConfig[] {
-    return this.servers;
-  }
 }
