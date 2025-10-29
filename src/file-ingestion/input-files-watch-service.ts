@@ -28,7 +28,7 @@ export class InputFilesWatchService {
     this.watcher.onChange = () => undefined;
 
     this.monitorInputFiles();
-    this.watcher.watch({});
+    this.watcher.watch({ stabilityThreshold: 15000 });
   }
 
   private async monitorInputFiles() {
