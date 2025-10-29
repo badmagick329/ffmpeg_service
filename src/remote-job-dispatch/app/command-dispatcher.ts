@@ -159,7 +159,6 @@ export class CommandDispatcher {
       return { reason, kind: "skip" };
     }
 
-    this.log(`  Target server: ${server.serverName}`);
     // NOTE: Allowing queueing of additional work for now
     // if (!this.stateManager.isServerIdle(server.serverName)) {
     //   const reason = `Server ${server.serverName} already has pending work`;
