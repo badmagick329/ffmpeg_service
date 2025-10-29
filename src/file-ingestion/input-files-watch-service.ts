@@ -27,8 +27,10 @@ export class InputFilesWatchService {
     this.watcher.onUnlink = this.onUnlink;
     this.watcher.onChange = () => undefined;
 
-    this.monitorInputFiles();
-    this.watcher.watch({ stabilityThreshold: 15000 });
+    (async () => {
+      await this.reconcileInputFiles();
+      this.watcher.watch({ stabilityThreshold: 15000 });
+    })();
   }
 
   private async monitorInputFiles() {
