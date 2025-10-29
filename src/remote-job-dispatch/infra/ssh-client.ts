@@ -5,9 +5,6 @@ import type {
 } from "@/remote-job-dispatch/core/iremote-client";
 import { $ } from "bun";
 
-/**
- * @deprecated Use Ssh2Client instead for progress tracking and better cross-platform support
- */
 export class SshClient implements IRemoteClient {
   async execute(server: ServerConfig, command: string): Promise<string> {
     const sshArgs = [
