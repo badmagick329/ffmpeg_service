@@ -33,7 +33,7 @@ async function dispatchNewCommands(
     serverConfigs: config.serverConfigs,
   });
   const dispatchSummary = await commandDispatcher.dispatchAllCommands();
-  console.log(dispatchSummary.toString());
+  console.log(dispatchSummary.text);
 }
 
 async function processPendingDownloads(
@@ -47,7 +47,7 @@ async function processPendingDownloads(
     serverConfigs: config.serverConfigs,
   });
   const downloadSummary = await downloadManager.processAllPendingDownloads();
-  console.log(downloadSummary.toString());
+  console.log(downloadSummary.text);
 }
 
 main().catch((error) => {

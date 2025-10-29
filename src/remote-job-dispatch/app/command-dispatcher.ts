@@ -14,6 +14,7 @@ export interface DispatchSummary {
   totalInputFilesUploaded: number;
   totalOutputFilesExpected: number;
   errors: string[];
+  text: string;
 }
 
 export interface SkipDetails {
@@ -53,6 +54,7 @@ export class CommandDispatcher {
       totalInputFilesUploaded: 0,
       totalOutputFilesExpected: 0,
       errors: [],
+      text: "",
     };
 
     const commandFiles = await this.scanCommandFiles();
@@ -83,7 +85,7 @@ export class CommandDispatcher {
         console.error(`Error processing ${basename(filePath)}:`, error);
       }
     }
-    summary.toString = () => this.createDispatchSummary(summary);
+    summary.text = this.createDispatchSummary(summary);
 
     return summary;
   }

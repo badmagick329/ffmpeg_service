@@ -12,6 +12,7 @@ export interface DownloadSummary {
   filesPending: number;
   serversCompleted: string[];
   interruptedOperations: number;
+  text: string;
 }
 
 export class DownloadManager {
@@ -42,6 +43,7 @@ export class DownloadManager {
       filesPending: 0,
       serversCompleted: [],
       interruptedOperations: 0,
+      text: "",
     };
 
     const interruptedCount = await this.handleInterruptedOperations();
@@ -78,7 +80,7 @@ export class DownloadManager {
         summary.serversCompleted.push(serverHost);
       }
     }
-    summary.toString = () => this.createDownloadSummary(summary);
+    summary.text = this.createDownloadSummary(summary);
 
     return summary;
   }
