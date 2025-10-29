@@ -100,7 +100,7 @@ export class CommandDispatcher {
       const filePath = join(this.cmdsInputDir, file);
 
       try {
-        const commands = await this.readCommands(filePath);
+        const commands = await this.readCommandsUnique(filePath);
         if (commands.length > 0) {
           commandFiles.push(filePath);
         }
@@ -186,20 +186,18 @@ export class CommandDispatcher {
         outputFilesExpected: number;
       }
   > {
-    const commands = await this.readCommands(filePath);
+    const commands = await this.readCommandsUnique(filePath);
     if (commands.length === 0) {
       const reason = "No valid commands found in file";
       this.log(`  ✗ ${reason}`);
       return { kind: "skip", reason };
     }
+    this.log(`  Found ${commands.length} command(s) with unique outputs.`);
 
-    this.log(`  Found ${commands.length} command(s)`);
-
-    const inputFiles = await this.extractInputFiles(commands);
-    const outputFiles = this.extractOutputFiles(commands);
-
-    this.log(`  Input files: ${inputFiles.length}`);
-    this.log(`  Output files expected: ${outputFiles.length}`);
+    const { inputFiles, outputFiles } = await this.getNewInputAndOutputFiles(
+      server,
+      commands
+    );
 
     await this.uploadCommandFile(server, filePath);
     const uploadedCount = await this.uploadInputFiles(server, inputFiles);
@@ -221,6 +219,53 @@ export class CommandDispatcher {
       inputFilesUploaded: uploadedCount,
       outputFilesExpected: outputFiles.length,
     };
+  }
+
+  private async getNewInputAndOutputFiles(
+    server: ServerConfig,
+    commands: string[]
+  ): Promise<{ inputFiles: string[]; outputFiles: string[] }> {
+    const extractedInputFiles = await this.extractInputFiles(commands);
+    this.log(`  Input files: ${extractedInputFiles.length}`);
+    const inputFiles = extractedInputFiles.filter(
+      (inputFile) =>
+        !this.stateManager
+          .getAllUploadedInputFiles(server.serverName)
+          .map((uploadedFile) => uploadedFile.localFile)
+          .includes(inputFile)
+    );
+    if (extractedInputFiles.length !== inputFiles.length) {
+      this.log(
+        `  ${
+          extractedInputFiles.length - inputFiles.length
+        } input file(s) already uploaded in previous runs.`
+      );
+    }
+
+    const extractedOutputFiles = this.extractOutputFiles(commands);
+    this.log(`  Output files expected: ${extractedOutputFiles.length}`);
+    const outputFiles = extractedOutputFiles.filter(
+      (outputFile) =>
+        !this.stateManager
+          .getAllPendingDownloads(server.serverName)
+          .map((pendingDownload) => pendingDownload.outputFile)
+          .includes(outputFile)
+    );
+    if (extractedOutputFiles.length !== outputFiles.length) {
+      this.log(
+        `  ${
+          extractedOutputFiles.length - outputFiles.length
+        } output file(s) already pending download in previous runs.`
+      );
+    }
+    return {
+      inputFiles,
+      outputFiles,
+    };
+  }
+
+  private async readCommandsUnique(filePath: string): Promise<string[]> {
+    return [...new Set(await this.readCommands(filePath))];
   }
 
   private async readCommands(filePath: string): Promise<string[]> {
