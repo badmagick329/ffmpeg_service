@@ -61,7 +61,9 @@ export class DownloadManager {
     for (const serverHost of serversWithWork) {
       const server = this.findServerByName(serverHost);
       if (!server) {
-        this.log(`⚠️  Warning: State file references unknown server "${serverHost}"`);
+        this.log(
+          `⚠️  Warning: State file references unknown server "${serverHost}"`
+        );
         continue;
       }
 
@@ -76,8 +78,30 @@ export class DownloadManager {
         summary.serversCompleted.push(serverHost);
       }
     }
+    summary.toString = () => this.createDownloadSummary(summary);
 
     return summary;
+  }
+
+  private createDownloadSummary(summary: DownloadSummary) {
+    const summaryLines = [
+      "\n--- Download Summary ---",
+      `Servers checked: ${summary.serversChecked}`,
+      `Files downloaded: ${summary.filesDownloaded}`,
+      `Files skipped: ${summary.filesSkipped}`,
+      `Files still pending: ${summary.filesPending}`,
+    ];
+    if (summary.serversCompleted.length > 0) {
+      summaryLines.push(
+        `Servers completed: ${summary.serversCompleted.join(", ")}`
+      );
+    }
+    if (summary.interruptedOperations > 0) {
+      summaryLines.push(
+        `⚠️ Interrupted operations: ${summary.interruptedOperations}`
+      );
+    }
+    return summaryLines.join("\n");
   }
 
   private async handleInterruptedOperations(): Promise<number> {
@@ -247,4 +271,3 @@ export class DownloadManager {
     await this.stateManager.removeServerState(server.serverName);
   }
 }
-

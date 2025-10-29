@@ -83,8 +83,38 @@ export class CommandDispatcher {
         console.error(`Error processing ${basename(filePath)}:`, error);
       }
     }
+    summary.toString = () => this.createDispatchSummary(summary);
 
     return summary;
+  }
+
+  private createDispatchSummary(summary: DispatchSummary) {
+    const summaryLines = [
+      "\n--- Dispatch Summary ---",
+      `Command files processed: ${summary.commandFilesProcessed}`,
+      `Command files skipped: ${summary.commandFilesSkipped}`,
+    ];
+
+    if (summary.serversDispatched.length > 0) {
+      summaryLines.push(
+        `Servers dispatched to: ${summary.serversDispatched.join(", ")}`
+      );
+    }
+    if (summary.totalInputFilesUploaded > 0) {
+      summaryLines.push(
+        `Total input files uploaded: ${summary.totalInputFilesUploaded}`
+      );
+    }
+    if (summary.totalOutputFilesExpected > 0) {
+      summaryLines.push(
+        `Total output files expected: ${summary.totalOutputFilesExpected}`
+      );
+    }
+    if (summary.errors.length > 0) {
+      summaryLines.push(`\n⚠️ Errors encountered:`);
+      summary.errors.forEach((err) => summaryLines.push(`  - ${err}`));
+    }
+    return summaryLines.join("\n");
   }
 
   private async scanCommandFiles(): Promise<string[]> {

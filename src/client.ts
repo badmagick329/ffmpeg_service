@@ -33,29 +33,7 @@ async function dispatchNewCommands(
     serverConfigs: config.serverConfigs,
   });
   const dispatchSummary = await commandDispatcher.dispatchAllCommands();
-
-  console.log("\n--- Dispatch Summary ---");
-  console.log(
-    `Command files processed: ${dispatchSummary.commandFilesProcessed}`
-  );
-  console.log(`Command files skipped: ${dispatchSummary.commandFilesSkipped}`);
-  if (dispatchSummary.serversDispatched.length > 0) {
-    console.log(
-      `Servers dispatched to: ${dispatchSummary.serversDispatched.join(", ")}`
-    );
-  }
-  console.log(
-    `Total input files uploaded: ${dispatchSummary.totalInputFilesUploaded}`
-  );
-  console.log(
-    `Total output files expected: ${dispatchSummary.totalOutputFilesExpected}`
-  );
-  if (dispatchSummary.errors.length > 0) {
-    console.log(`\n⚠️ Errors encountered:`);
-    dispatchSummary.errors.forEach((err) => console.log(`  - ${err}`));
-  }
-
-  console.log("\n=== Client finished successfully ===");
+  console.log(dispatchSummary.toString());
 }
 
 async function processPendingDownloads(
@@ -69,22 +47,7 @@ async function processPendingDownloads(
     serverConfigs: config.serverConfigs,
   });
   const downloadSummary = await downloadManager.processAllPendingDownloads();
-
-  console.log("\n--- Download Summary ---");
-  console.log(`Servers checked: ${downloadSummary.serversChecked}`);
-  console.log(`Files downloaded: ${downloadSummary.filesDownloaded}`);
-  console.log(`Files skipped: ${downloadSummary.filesSkipped}`);
-  console.log(`Files still pending: ${downloadSummary.filesPending}`);
-  if (downloadSummary.serversCompleted.length > 0) {
-    console.log(
-      `Servers completed: ${downloadSummary.serversCompleted.join(", ")}`
-    );
-  }
-  if (downloadSummary.interruptedOperations > 0) {
-    console.log(
-      `⚠️ Interrupted operations: ${downloadSummary.interruptedOperations}`
-    );
-  }
+  console.log(downloadSummary.toString());
 }
 
 main().catch((error) => {
