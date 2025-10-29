@@ -13,6 +13,7 @@ export interface IJobsRepository {
   setSuccess(jobId: number): void;
   setFail(jobId: number): void;
   enqueueUnique(job: NewJob): { id: number } | null;
+  enqueue(job: NewJob): { id: number } | null;
 
   getJobStatusCount(): StatusCount;
 }

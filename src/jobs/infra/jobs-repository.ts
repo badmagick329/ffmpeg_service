@@ -93,6 +93,10 @@ export class JobsRepository implements IJobsRepository {
       return null;
     }
 
+    return this.enqueue(job);
+  }
+
+  enqueue(job: NewJob): { id: number } | null {
     const result = this._enqueue.get({
       $raw_cmd: job.rawCmd,
       $localized_cmd: job.localizedCmd,

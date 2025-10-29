@@ -38,7 +38,7 @@ export class FsCommandsWatchService {
       .filter((l) => Boolean(l) && !l.startsWith("#"))
       .forEach((c) => {
         try {
-          this.jobsCreationService.enqueueUnique(c);
+          this.jobsCreationService.enqueue(c);
         } catch (err) {
           console.error(`Error enqueueing command "${c}":`, err);
         }

@@ -30,6 +30,7 @@ export class JobCreationService {
       this.log.error(`Failed to create job: ${error}`, { error });
       return null;
     }
+
     const result = this.jobsRepo.enqueueUnique(job);
     if (result) {
       this.log.info(`Enqueued unique job with ID: ${result.id}`, {
@@ -39,6 +40,33 @@ export class JobCreationService {
       this.log.warn(
         "Job with the same localized command already exists. Skipping enqueue."
       );
+    }
+    return result;
+  }
+
+  /**
+   * Enqueues a job for processing.
+   *
+   * @param ffmpegCmd - The ffmpeg command to execute.
+   * @returns The ID of the enqueued job, or null if an error occurred.
+   * @throws {Error} If the ffmpeg command is invalid.
+   */
+  enqueue(ffmpegCmd: string) {
+    let job: NewJob;
+    try {
+      job = this.createJob(ffmpegCmd);
+    } catch (error) {
+      this.log.error(`Failed to create job: ${error}`, { error });
+      return null;
+    }
+
+    const result = this.jobsRepo.enqueue(job);
+    if (result) {
+      this.log.info(`Enqueued unique job with ID: ${result.id}`, {
+        jobId: result.id,
+      });
+    } else {
+      this.log.warn("Failed to enqueue job.");
     }
     return result;
   }
