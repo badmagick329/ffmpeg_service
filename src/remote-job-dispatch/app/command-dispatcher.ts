@@ -6,6 +6,7 @@ import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import { createProgressBar } from "@/remote-job-dispatch/utils/progress-bar";
 import { readdir, exists } from "node:fs/promises";
 import { basename, resolve, join } from "path";
+import { ParsedCommandFile } from "@/remote-job-dispatch/core/parsed-command-file";
 
 export interface DispatchSummary {
   commandFilesProcessed: number;
@@ -68,6 +69,7 @@ export class CommandDispatcher {
 
     for (const filePath of commandFiles) {
       try {
+        await this.preprocessCommandFile(filePath);
         const result = await this.processCommandFile(filePath);
 
         if (result.kind === "skip") {
@@ -132,6 +134,7 @@ export class CommandDispatcher {
       const filePath = join(this.cmdsInputDir, file);
 
       try {
+        // NOTE: Shouldn't need unique check anymore?
         const commands = await this.readCommandsUnique(filePath);
         if (commands.length > 0) {
           commandFiles.push(filePath);
@@ -142,6 +145,11 @@ export class CommandDispatcher {
     }
 
     return commandFiles;
+  }
+
+  private async preprocessCommandFile(filePath: string): Promise<void> {
+    const parsedFile = new ParsedCommandFile(await Bun.file(filePath).text());
+    await Bun.file(filePath).write(parsedFile.uniqueContent);
   }
 
   private async processCommandFile(filePath: string): Promise<
