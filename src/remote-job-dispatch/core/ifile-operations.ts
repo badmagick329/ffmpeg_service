@@ -29,5 +29,24 @@ export interface IFileOperations {
     outputFile: string
   ): Promise<boolean>;
 
-  removeFile(server: ServerConfig, remoteFile: string): Promise<void>;
+  removeFile(
+    server: ServerConfig,
+    remoteFile: string
+  ): Promise<
+    | {
+        remoteFile: string;
+        error: string;
+      }
+    | undefined
+  >;
+  removeRemoteFiles(
+    server: ServerConfig,
+    remoteFiles: string[]
+  ): Promise<{
+    removals: number;
+    failures: {
+      remoteFile: string;
+      error: string;
+    }[];
+  }>;
 }

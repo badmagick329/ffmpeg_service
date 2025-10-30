@@ -116,12 +116,48 @@ export class SshFileOperations implements IFileOperations {
     return true;
   }
 
-  async removeFile(server: ServerConfig, remoteFile: string): Promise<void> {
+  async removeFile(
+    server: ServerConfig,
+    remoteFile: string
+  ): Promise<
+    | {
+        remoteFile: string;
+        error: string;
+      }
+    | undefined
+  > {
     try {
       const escapedPath = remoteFile.replace(/'/g, "'\\''");
       await this.remoteClient.execute(server, `rm -f '${escapedPath}'`);
     } catch (error) {
-      this.log(`Warning: Failed to delete remote file ${remoteFile}: ${error}`);
+      return {
+        remoteFile,
+        error: String(error),
+      };
     }
+  }
+
+  async removeRemoteFiles(
+    server: ServerConfig,
+    remoteFiles: string[]
+  ): Promise<{
+    removals: number;
+    failures: {
+      remoteFile: string;
+      error: string;
+    }[];
+  }> {
+    let removals = 0;
+    const failures = [] as { remoteFile: string; error: string }[];
+
+    for (const remoteFile of remoteFiles) {
+      const removalError = await this.removeFile(server, remoteFile);
+      if (!removalError) {
+        removals++;
+        continue;
+      }
+      failures.push(removalError);
+    }
+    return { removals, failures };
   }
 }

@@ -19,6 +19,7 @@ export interface PendingDownload {
   remoteFile: string;
   status: DownloadStatus;
   addedAt: string;
+  relatedInputFile: string;
   lastChecked?: string;
 }
 
@@ -310,6 +311,45 @@ export class ClientStateManager {
     return Object.keys(this.state.servers).filter(
       (server) => !this.isServerIdle(server)
     );
+  }
+
+  async getUnusedInputFilesOnServers(servers: ServerConfig[]): Promise<
+    {
+      server: ServerConfig;
+      uploadedInputFiles: UploadedInputFile[];
+    }[]
+  > {
+    let unusedInputFilesOnServers = [] as {
+      server: ServerConfig;
+      uploadedInputFiles: UploadedInputFile[];
+    }[];
+
+    for (const server of servers) {
+      const uploadedInputFiles = await this.getUnusedInputFilesOnServer(server);
+
+      if (uploadedInputFiles.length === 0) {
+        continue;
+      }
+
+      unusedInputFilesOnServers.push({
+        server: server,
+        uploadedInputFiles: uploadedInputFiles,
+      });
+    }
+    return unusedInputFilesOnServers;
+  }
+
+  private async getUnusedInputFilesOnServer(
+    server: ServerConfig
+  ): Promise<UploadedInputFile[]> {
+    const inputFiles = this.getAllUploadedInputFiles(server.serverName);
+
+    const pendingDownloads = this.getAllPendingDownloads(server.serverName);
+    const unusedInputFiles = inputFiles.filter(
+      (i) =>
+        !pendingDownloads.map((p) => p.relatedInputFile).includes(i.localFile)
+    );
+    return unusedInputFiles;
   }
 
   private static async loadState(stateFilePath: string): Promise<ClientState> {

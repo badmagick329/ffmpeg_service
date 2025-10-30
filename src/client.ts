@@ -19,6 +19,21 @@ async function main() {
 
   await processPendingDownloads(fileOperations, stateManager);
   await dispatchNewCommands(fileOperations, stateManager);
+  await promptForInputFileCleanup(fileOperations, stateManager);
+}
+
+async function processPendingDownloads(
+  fileOperations: SshFileOperations,
+  stateManager: ClientStateManager
+) {
+  console.log("=== Checking for completed outputs ===");
+  const downloadManager = new DownloadManager({
+    fileOperations,
+    stateManager,
+    serverConfigs: config.serverConfigs,
+  });
+  const downloadSummary = await downloadManager.processAllPendingDownloads();
+  console.log(downloadSummary.text);
 }
 
 async function dispatchNewCommands(
@@ -36,18 +51,27 @@ async function dispatchNewCommands(
   console.log(dispatchSummary.text);
 }
 
-async function processPendingDownloads(
+async function promptForInputFileCleanup(
   fileOperations: SshFileOperations,
   stateManager: ClientStateManager
 ) {
-  console.log("=== Checking for completed outputs ===");
-  const downloadManager = new DownloadManager({
-    fileOperations,
-    stateManager,
-    serverConfigs: config.serverConfigs,
-  });
-  const downloadSummary = await downloadManager.processAllPendingDownloads();
-  console.log(downloadSummary.text);
+  console.log("\n=== Checking for unused input files ===");
+  let unusedInputFilesOnServers =
+    await stateManager.getUnusedInputFilesOnServers(config.serverConfigs);
+
+  console.log(unusedInputFilesOnServers.join("\n"));
+  const yes =
+    prompt(
+      "Remove the above input files which are no longer being used? [y/N] "
+    )?.trim() === "y";
+  if (yes) {
+    for (const result of unusedInputFilesOnServers) {
+      await fileOperations.removeRemoteFiles(
+        result.server,
+        result.uploadedInputFiles.map((i) => i.remoteFile)
+      );
+    }
+  }
 }
 
 main().catch((error) => {

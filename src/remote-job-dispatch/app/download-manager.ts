@@ -161,7 +161,7 @@ export class DownloadManager {
       );
 
       if (this.stateManager.areAllDownloadsCompleted(server.serverName)) {
-        await this.cleanupServerInputFiles(server);
+        await this.cleanupInputFilesOnServer(server);
         result.allCompleted = true;
       }
 
@@ -200,7 +200,7 @@ export class DownloadManager {
     }
 
     if (this.stateManager.areAllDownloadsCompleted(server.serverName)) {
-      await this.cleanupServerInputFiles(server);
+      await this.cleanupInputFilesOnServer(server);
       result.allCompleted = true;
     }
 
@@ -238,7 +238,7 @@ export class DownloadManager {
     }
   }
 
-  private async cleanupServerInputFiles(server: ServerConfig): Promise<void> {
+  private async cleanupInputFilesOnServer(server: ServerConfig): Promise<void> {
     const inputFiles = this.stateManager.getAllUploadedInputFiles(
       server.serverName
     );
@@ -253,22 +253,21 @@ export class DownloadManager {
       `Server ${server.serverName}: Cleaning up ${inputFiles.length} input file(s)...`
     );
 
-    let cleaned = 0;
-    let failed = 0;
-
-    for (const inputFile of inputFiles) {
-      try {
-        await this.fileOperations.removeFile(server, inputFile.remoteFile);
-        cleaned++;
-      } catch (error) {
-        console.error(`Failed to remove ${inputFile.remoteFile}:`, error);
-        failed++;
+    const removalResult = await this.fileOperations.removeRemoteFiles(
+      server,
+      inputFiles.map((i) => i.remoteFile)
+    );
+    if (removalResult.removals > 0) {
+      this.log(`  ✓ Removed ${removalResult.removals} input file(s)`);
+    }
+    if (removalResult.failures.length > 0) {
+      this.log(
+        `  ⚠️ Failed to remove ${removalResult.failures.length} input file(s):`
+      );
+      for (const failure of removalResult.failures) {
+        this.log(`    - ${failure.remoteFile}: ${failure.error}`);
       }
     }
-
-    this.log(
-      `Server ${server.serverName}: Cleanup completed (${cleaned} removed, ${failed} failed)`
-    );
 
     await this.stateManager.removeServerState(server.serverName);
   }
