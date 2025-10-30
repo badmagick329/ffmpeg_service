@@ -1,26 +1,12 @@
 import type { ServerConfig } from "@/infra/config";
-import type {
-  IRemoteClient,
-  ProgressCallback,
-} from "@/remote-job-dispatch/core/iremote-client";
 import { $ } from "bun";
 
-export class SshClient implements IRemoteClient {
-  async execute(server: ServerConfig, command: string): Promise<string> {
-    const sshArgs = [
-      ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
-      "-o",
-      "StrictHostKeyChecking=no",
-      "-o",
-      "ConnectTimeout=15",
-      `${server.sshUser}@${server.sshHostIP}`,
-      command,
-    ];
+import type {
+  ITransferClient,
+  ProgressCallback,
+} from "@/remote-job-dispatch/core/itransfer-client";
 
-    const result = await $`ssh ${sshArgs}`.text();
-    return result;
-  }
-
+export class ScpTranferClient implements ITransferClient {
   async upload(
     server: ServerConfig,
     localFile: string,
@@ -47,7 +33,6 @@ export class SshClient implements IRemoteClient {
       throw error;
     }
   }
-
   async download(
     server: ServerConfig,
     remoteFile: string,

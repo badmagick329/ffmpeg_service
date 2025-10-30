@@ -1,5 +1,5 @@
 import type { ServerConfig } from "@/infra/config";
-import type { ProgressCallback } from "./iremote-client";
+import type { ProgressCallback } from "@/remote-job-dispatch/core/itransfer-client";
 
 export interface IFileOperations {
   uploadFile(

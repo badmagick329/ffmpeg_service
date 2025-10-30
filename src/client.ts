@@ -1,8 +1,9 @@
 import { config } from "@/infra/config";
-import { SshClient, SshFileOperations } from "@/remote-job-dispatch";
+import { SshCommandExecutor, SshFileOperations } from "@/remote-job-dispatch";
 import { ClientStateManager } from "@/remote-job-dispatch/core/client-state-manager";
 import { DownloadManager } from "@/remote-job-dispatch/app/download-manager";
 import { CommandDispatcher } from "@/remote-job-dispatch/app/command-dispatcher";
+import { SftpTransferClient } from "@/remote-job-dispatch/infra/sftp-transfer-client";
 
 async function main() {
   if (!config.serverConfigs || config.serverConfigs.length === 0) {
@@ -10,8 +11,12 @@ async function main() {
     process.exit(1);
   }
 
-  const remoteClient = new SshClient();
-  const fileOperations = new SshFileOperations(remoteClient);
+  const transferClient = new SftpTransferClient();
+  const sshCommandExecutor = new SshCommandExecutor();
+  const fileOperations = new SshFileOperations(
+    sshCommandExecutor,
+    transferClient
+  );
   const stateManager = await ClientStateManager.create(
     config.clientStateFile,
     config.serverConfigs

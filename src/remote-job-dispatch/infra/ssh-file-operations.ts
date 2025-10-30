@@ -1,15 +1,19 @@
 import type { ServerConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
+import type { IRemoteCommandExecutor } from "@/remote-job-dispatch/core/iremote-executor";
 import type {
-  IRemoteClient,
+  ITransferClient,
   ProgressCallback,
-} from "@/remote-job-dispatch/core/iremote-client";
+} from "@/remote-job-dispatch/core/itransfer-client";
 import { basename } from "path";
 
 export class SshFileOperations implements IFileOperations {
   private readonly log = console.log;
 
-  constructor(private remoteClient: IRemoteClient) {}
+  constructor(
+    private readonly sshCommandExecutor: IRemoteCommandExecutor,
+    private readonly transferClient: ITransferClient
+  ) {}
 
   async uploadFile(
     server: ServerConfig,
@@ -17,7 +21,7 @@ export class SshFileOperations implements IFileOperations {
     remotePath: string,
     onProgress?: ProgressCallback
   ): Promise<void> {
-    await this.remoteClient.upload(server, localPath, remotePath, onProgress);
+    await this.transferClient.upload(server, localPath, remotePath, onProgress);
   }
 
   async downloadFileAndCleanup(
@@ -31,7 +35,12 @@ export class SshFileOperations implements IFileOperations {
       return;
     }
 
-    await this.remoteClient.download(server, remotePath, localPath, onProgress);
+    await this.transferClient.download(
+      server,
+      remotePath,
+      localPath,
+      onProgress
+    );
     await this.removeFile(server, remotePath);
     const successFile = `${server.remoteSuccessDir}/${basename(
       remotePath
@@ -46,7 +55,7 @@ export class SshFileOperations implements IFileOperations {
     try {
       const escapedPath = remotePath.replace(/'/g, "'\\''");
       const command = `test -f '${escapedPath}'`;
-      await this.remoteClient.execute(server, command);
+      await this.sshCommandExecutor.execute(server, command);
       return true;
     } catch {
       return false;
@@ -68,7 +77,7 @@ export class SshFileOperations implements IFileOperations {
 
       const escapedPath = remotePath.replace(/'/g, "'\\''");
       const remoteSize = (
-        await this.remoteClient.execute(
+        await this.sshCommandExecutor.execute(
           server,
           `stat -c%s '${escapedPath}' 2>/dev/null || echo "0"`
         )
@@ -128,7 +137,7 @@ export class SshFileOperations implements IFileOperations {
   > {
     try {
       const escapedPath = remoteFile.replace(/'/g, "'\\''");
-      await this.remoteClient.execute(server, `rm -f '${escapedPath}'`);
+      await this.sshCommandExecutor.execute(server, `rm -f '${escapedPath}'`);
     } catch (error) {
       return {
         remoteFile,

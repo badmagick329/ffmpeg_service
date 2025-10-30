@@ -9,8 +9,7 @@ export interface TransferProgress {
 
 export type ProgressCallback = (progress: TransferProgress) => void;
 
-export interface IRemoteClient {
-  execute(server: ServerConfig, command: string): Promise<string>;
+export interface ITransferClient {
   upload(
     server: ServerConfig,
     localFile: string,

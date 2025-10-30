@@ -1,25 +1,16 @@
 import type { ServerConfig } from "@/infra/config";
-import type { IRemoteCommandExecutor } from "@/remote-job-dispatch/core/iremote-executor";
-
-import { Client, type SFTPWrapper, type ClientChannel } from "ssh2";
+import type {
+  ITransferClient,
+  ProgressCallback,
+} from "@/remote-job-dispatch/core/itransfer-client";
+import { Client, type SFTPWrapper } from "ssh2";
 import { basename } from "path";
 import { createReadStream, createWriteStream } from "fs";
 import { stat } from "fs/promises";
 import { pipeline } from "stream/promises";
-import type { ProgressCallback } from "@/remote-job-dispatch/core/itransfer-client";
 
-export class Ssh2Client implements IRemoteCommandExecutor {
-  private static readonly highWaterMark = 8 * 1024 * 1024;
-
-  async execute(server: ServerConfig, command: string): Promise<string> {
-    const client = await this.connect(server);
-
-    try {
-      return await this.execCommand(client, command);
-    } finally {
-      client.end();
-    }
-  }
+export class Ssh2TransferClient implements ITransferClient {
+  constructor(private readonly highWaterMark = 8 * 1024 * 1024) {}
 
   async upload(
     server: ServerConfig,
@@ -95,36 +86,6 @@ export class Ssh2Client implements IRemoteCommandExecutor {
       });
     });
   }
-
-  private async execCommand(client: Client, command: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      client.exec(command, (err, stream: ClientChannel) => {
-        if (err) {
-          return reject(err);
-        }
-
-        let stdout = "";
-        let stderr = "";
-
-        stream.on("data", (data: Buffer) => {
-          stdout += data.toString();
-        });
-
-        stream.stderr.on("data", (data: Buffer) => {
-          stderr += data.toString();
-        });
-
-        stream.on("close", (code: number) => {
-          if (code !== 0) {
-            reject(new Error(`Command failed (code ${code}): ${stderr}`));
-          } else {
-            resolve(stdout);
-          }
-        });
-      });
-    });
-  }
-
   private async _upload(
     sftp: SFTPWrapper,
     localPath: string,
@@ -137,11 +98,11 @@ export class Ssh2Client implements IRemoteCommandExecutor {
     let transferred = 0;
 
     const readStream = createReadStream(localPath, {
-      highWaterMark: Ssh2Client.highWaterMark,
+      highWaterMark: this.highWaterMark,
     });
 
     const writeStream = sftp.createWriteStream(remotePath, {
-      highWaterMark: Ssh2Client.highWaterMark,
+      highWaterMark: this.highWaterMark,
       autoClose: true,
     });
 
@@ -182,12 +143,12 @@ export class Ssh2Client implements IRemoteCommandExecutor {
     let transferred = 0;
 
     const readStream = sftp.createReadStream(remotePath, {
-      highWaterMark: Ssh2Client.highWaterMark,
+      highWaterMark: this.highWaterMark,
       autoClose: true,
     });
 
     const writeStream = createWriteStream(localPath, {
-      highWaterMark: Ssh2Client.highWaterMark,
+      highWaterMark: this.highWaterMark,
     });
 
     readStream.on("data", (chunk: Buffer) => {

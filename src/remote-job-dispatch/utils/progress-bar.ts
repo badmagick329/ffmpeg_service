@@ -1,4 +1,4 @@
-import type { TransferProgress } from "@/remote-job-dispatch/core/iremote-client";
+import type { TransferProgress } from "@/remote-job-dispatch/core/itransfer-client";
 
 export function createProgressBar() {
   let lastOutput = "";
@@ -17,7 +17,6 @@ export function createProgressBar() {
 
       const output = `\r    [${bar}] ${progress.percentage}% (${mbTransferred}/${mbTotal} MB)`;
 
-      // Only update if changed
       if (output !== lastOutput) {
         process.stdout.write(output);
         lastOutput = output;
