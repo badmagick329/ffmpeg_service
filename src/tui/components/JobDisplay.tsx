@@ -3,6 +3,7 @@ import type { JobInfo } from "@/tui/lib/app-state";
 import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
 import { getJobStatusColor } from "@/tui/lib/job-status-color";
+import { humanReadableTimeDelta } from "@/tui/lib/utils";
 
 export default function JobDisplay({ job }: { job: JobInfo }) {
   const [timeDelta, setTimeDelta] = useState("");
@@ -40,20 +41,4 @@ export default function JobDisplay({ job }: { job: JobInfo }) {
       )}
     </Box>
   );
-}
-
-function humanReadableTimeDelta(startTime: number): string {
-  const now = Date.now();
-  const delta = now - startTime;
-
-  if (delta > 1000 * 60 * 60) {
-    return `${Math.round(delta / (1000 * 60 * 60))}h${Math.round(
-      delta % (1000 * 60)
-    )}m ago`;
-  }
-  if (delta > 1000 * 60) {
-    return `${Math.round(delta / (1000 * 60))}m ago`;
-  }
-
-  return `less than a min ago`;
 }
