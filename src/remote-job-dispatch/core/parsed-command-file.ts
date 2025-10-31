@@ -23,6 +23,10 @@ export class ParsedCommandFile {
     const lineToOutput = new Map<string, string>();
 
     for (const line of lines) {
+      if (line === "") {
+        continue;
+      }
+
       lineCounter.set(line, (lineCounter.get(line) ?? 0) + 1);
 
       try {

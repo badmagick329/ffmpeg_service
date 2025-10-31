@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { ParsedCommandFile } from "@/remote-job-dispatch/core/parsed-command-file";
+import { ExceptionHandler, exceptions } from "winston";
 
 describe("ParsedCommandFile.contentAsUniqueCommands", () => {
   it("should keep last occurrence when exact duplicate lines exist", () => {
@@ -109,5 +110,17 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
     expect(lines[3]).toContain(duplicateOutputCmd1);
     expect(lines[4]).toBe(uniqueCmd);
     expect(lines[5]).toBe(duplicateOutputCmd2);
+  });
+
+  it("should leave empty lines as they are and not flag them as duplicate", () => {
+    const fileContent = ["", "", "ffmpeg -i input.mp4 output.mp4", ""].join(
+      "\n"
+    );
+
+    const result = new ParsedCommandFile(fileContent);
+    const lines = result.uniqueContent.split("\n");
+    expect(lines.length).toBe(4);
+    expect(lines[2]).toBe("ffmpeg -i input.mp4 output.mp4");
+    [lines[0], lines[1], lines[3]].forEach((l) => expect(l).toBe(""));
   });
 });
