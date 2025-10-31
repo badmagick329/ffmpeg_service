@@ -1,16 +1,17 @@
+import { Option } from "@/common/option";
 import type { ServerConfig } from "@/infra/config";
 import { basename } from "path";
 
 export class ServerSelector {
   constructor(private servers: ServerConfig[]) {}
 
-  selectServer(filePath: string): ServerConfig | undefined {
+  selectServer(filePath: string): Option<ServerConfig> {
     const filename = basename(filePath);
     const filenameWithoutExt = filename.replace(/\.[^/.]+$/, "");
 
     for (const server of this.servers) {
       if (filenameWithoutExt.includes(server.serverName)) {
-        return server;
+        return Option.some(server);
       }
     }
 
@@ -20,10 +21,10 @@ export class ServerSelector {
           `⚠️  Matched by IP (${server.sshHostIP}) instead of serverName. ` +
             `Consider renaming file to include "${server.serverName}"`
         );
-        return server;
+        return Option.some(server);
       }
     }
 
-    return undefined;
+    return Option.none();
   }
 }

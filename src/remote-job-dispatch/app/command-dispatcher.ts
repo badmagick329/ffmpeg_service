@@ -7,6 +7,12 @@ import { createProgressBar } from "@/remote-job-dispatch/utils/progress-bar";
 import { readdir, exists } from "node:fs/promises";
 import { basename, join } from "path";
 import { ParsedCommandFile } from "@/remote-job-dispatch/core/parsed-command-file";
+import { Result } from "@/common/result";
+import {
+  ServerSelectionError,
+  FileReadError,
+  FileWriteError,
+} from "@/remote-job-dispatch/core/errors";
 
 export interface DispatchSummary {
   commandFilesProcessed: number;
@@ -71,37 +77,51 @@ export class CommandDispatcher {
       this.log(`\nProcessing: ${basename(filePath)}`);
 
       const serverResult = await this.getServerOrSkip(filePath);
-      if (serverResult.kind === "skip") {
+      if (serverResult.isFailure) {
         summary.commandFilesSkipped++;
-        summary.errors.push(serverResult.reason || "Unknown reason");
+        summary.errors.push(serverResult.unwrapError().message);
         continue;
       }
+      const server = serverResult.unwrap();
 
-      const server = serverResult.server;
       const outputFilesInBatch = this.stateManager
         .getAllPendingDownloads(server.serverName)
         .map((d) => d.outputFile);
 
       this.log(`  Target server: ${server.serverName}`);
-      try {
-        await this.preprocessCommandFile(filePath, outputFilesInBatch);
-        const result = await this.processCommands(server, filePath);
 
-        if (result.kind === "skip") {
-          summary.commandFilesSkipped++;
-          summary.errors.push(result.reason || "Unknown reason");
-          continue;
-        }
-
-        summary.commandFilesProcessed++;
-        summary.serversDispatched.push(result.server!);
-        summary.totalInputFilesUploaded += result.inputFilesUploaded || 0;
-        summary.totalOutputFilesExpected += result.outputFilesExpected || 0;
-      } catch (error) {
+      const preprocessResult = await this.preprocessCommandFile(
+        filePath,
+        outputFilesInBatch
+      );
+      if (preprocessResult.isFailure) {
         summary.commandFilesSkipped++;
-        summary.errors.push(`${basename(filePath)}: ${error}`);
-        console.error(`Error processing ${basename(filePath)}:`, error);
+        summary.errors.push(
+          `${basename(filePath)}: Failed to preprocess - ${
+            preprocessResult.unwrapError().message
+          }`
+        );
+        continue;
       }
+
+      const processCommandsResult = await this.processCommands(
+        server,
+        filePath
+      );
+
+      if (processCommandsResult.isFailure) {
+        summary.commandFilesSkipped++;
+        summary.errors.push(
+          `${basename(filePath)}: ${processCommandsResult.unwrapError()}`
+        );
+        continue;
+      }
+
+      const result = processCommandsResult.unwrap();
+      summary.commandFilesProcessed++;
+      summary.serversDispatched.push(result.server);
+      summary.totalInputFilesUploaded += result.inputFilesUploaded;
+      summary.totalOutputFilesExpected += result.outputFilesExpected;
     }
     summary.text = this.createDispatchSummary(summary);
 
@@ -149,14 +169,13 @@ export class CommandDispatcher {
     for (const file of files) {
       const filePath = join(this.cmdsInputDir, file);
 
-      try {
-        // NOTE: Shouldn't need unique check anymore?
-        const commands = await this.readCommandsUnique(filePath);
-        if (commands.length > 0) {
-          commandFiles.push(filePath);
-        }
-      } catch (error) {
-        this.log(`⚠️ Could not stat file: ${file}`);
+      // NOTE: Shouldn't need unique check anymore?
+      const commandsResult = await this.readCommandsUnique(filePath);
+      if (commandsResult.isSuccess && commandsResult.unwrap().length > 0) {
+        commandFiles.push(filePath);
+      }
+      if (commandsResult.isFailure) {
+        this.log(`⚠️ ${commandsResult.unwrapError()}`);
       }
     }
 
@@ -166,70 +185,80 @@ export class CommandDispatcher {
   private async preprocessCommandFile(
     filePath: string,
     outputFilesInBatch: string[]
-  ): Promise<void> {
-    const parsedFile = new ParsedCommandFile(
-      await Bun.file(filePath).text(),
-      outputFilesInBatch
+  ): Promise<Result<void, FileReadError | FileWriteError>> {
+    const readResult = await Result.fromThrowableAsync(async () =>
+      Bun.file(filePath).text()
     );
-    await Bun.file(filePath).write(parsedFile.uniqueContent);
-  }
 
-  private async getServerOrSkip(filePath: string): Promise<
-    | {
-        server: ServerConfig;
-        kind: "ok";
-      }
-    | {
-        kind: "skip";
-        reason: string;
-      }
-  > {
-    const serverSelector = new ServerSelector(this.serverConfigs);
-    const server = serverSelector.selectServer(filePath);
-
-    if (!server) {
-      const reason = `No matching server found for file: ${basename(filePath)}`;
-      this.log(`  ✗ ${reason}`);
-      this.log(
-        `    Available servers: ${this.serverConfigs
-          .map((s) => s.serverName)
-          .join(", ")}`
+    if (readResult.isFailure) {
+      return Result.failure(
+        new FileReadError(filePath, readResult.unwrapError())
       );
-      return { reason, kind: "skip" };
     }
 
-    // NOTE: Allowing queueing of additional work for now
-    // if (!this.stateManager.isServerIdle(server.serverName)) {
-    //   const reason = `Server ${server.serverName} already has pending work`;
-    //   this.log(`  ✗ ${reason}`);
-    //   this.log(
-    //     `    Wait for current batch to complete before dispatching new work`
-    //   );
-    //   return { skipped: true, reason };
-    // }
-    return { server, kind: "ok" };
+    const content = readResult.unwrap();
+    const parsedFile = new ParsedCommandFile(content, outputFilesInBatch);
+
+    const writeResult = await Result.fromThrowableAsync(async () =>
+      Bun.file(filePath).write(parsedFile.uniqueContent)
+    );
+
+    if (writeResult.isFailure) {
+      return Result.failure(
+        new FileWriteError(filePath, writeResult.unwrapError())
+      );
+    }
+
+    return Result.success(undefined);
+  }
+
+  private async getServerOrSkip(
+    filePath: string
+  ): Promise<Result<ServerConfig, ServerSelectionError>> {
+    const serverSelector = new ServerSelector(this.serverConfigs);
+    const result = serverSelector.selectServer(filePath);
+
+    return result.match(
+      (server) => Result.success(server),
+      () => {
+        const error = new ServerSelectionError(
+          basename(filePath),
+          this.serverConfigs.map((s) => s.serverName)
+        );
+        this.log(`  ✗ ${error.message}`);
+        this.log(`    Available servers: ${error.availableServers.join(", ")}`);
+        return Result.failure(error);
+      }
+    );
   }
 
   private async processCommands(
     server: ServerConfig,
     filePath: string
   ): Promise<
-    | {
-        kind: "skip";
-        reason: string;
-      }
-    | {
-        kind: "ok";
+    Result<
+      {
         server: string;
         inputFilesUploaded: number;
         outputFilesExpected: number;
-      }
+      },
+      string
+    >
   > {
-    const commands = await this.readCommandsUnique(filePath);
+    const commandsResult = await this.readCommandsUnique(filePath);
+    if (commandsResult.isFailure) {
+      const reason = `Failed to read commands: ${
+        commandsResult.unwrapError().message
+      }`;
+      this.log(`  ✗ ${reason}`);
+      return Result.failure(reason);
+    }
+
+    const commands = commandsResult.unwrap();
     if (commands.length === 0) {
       const reason = "No valid commands found in file";
       this.log(`  ✗ ${reason}`);
-      return { kind: "skip", reason };
+      return Result.failure(reason);
     }
     this.log(`  Found ${commands.length} command(s) with unique outputs.`);
 
@@ -251,19 +280,24 @@ export class CommandDispatcher {
 
     this.log(`  ✓ Dispatched to ${server.serverName}`);
 
-    return {
-      kind: "ok",
+    return Result.success({
       server: server.serverName,
       inputFilesUploaded: uploadedCount,
       outputFilesExpected: expectedResults.length,
-    };
+    });
   }
 
   async getNewInputFilesAndExpectedResults(
     server: ServerConfig,
     commands: string[],
     verifyExist = true
-  ) {
+  ): Promise<{
+    inputFiles: string[];
+    expectedResults: {
+      outputFile: string;
+      relatedInputFile: string;
+    }[];
+  }> {
     const skipInputs = [] as string[];
     const inputFiles = [] as string[];
     const expectedResults = [] as {
@@ -313,21 +347,25 @@ export class CommandDispatcher {
     return { inputFiles, expectedResults };
   }
 
-  private async readCommandsUnique(filePath: string): Promise<string[]> {
-    return [...new Set(await this.readCommands(filePath))];
+  private async readCommandsUnique(
+    filePath: string
+  ): Promise<Result<string[], FileReadError>> {
+    const commandsResult = await this.readCommands(filePath);
+    return commandsResult.map((commands) => [...new Set(commands)]);
   }
 
-  private async readCommands(filePath: string): Promise<string[]> {
-    try {
+  private async readCommands(
+    filePath: string
+  ): Promise<Result<string[], FileReadError>> {
+    const result = await Result.fromThrowableAsync(async () => {
       const content = await Bun.file(filePath).text();
       return content
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line && !line.startsWith("#"));
-    } catch (error) {
-      console.error(`Error reading command file ${filePath}:`, error);
-      return [];
-    }
+    });
+
+    return result.mapError((error) => new FileReadError(filePath, error));
   }
 
   private async uploadCommandFile(
