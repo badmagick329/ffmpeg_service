@@ -123,4 +123,29 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
     expect(lines[2]).toBe("ffmpeg -i input.mp4 output.mp4");
     [lines[0], lines[1], lines[3]].forEach((l) => expect(l).toBe(""));
   });
+  it("should comment out outputs present in the outputFilesInBatch list", () => {
+    const line0 = 'ffmpeg -i "input.mp4" -c:v libx264 -crf 20 "output0.mp4"';
+    const line1 =
+      'ffmpeg -i "D:/media/input.mp4" -c:v libx264 -crf 20 "output1.mp4"';
+    const line2 =
+      'ffmpeg -i "/usr/local/videos/input.mp4" -c:v libx264 -crf 20 "output2.mp4"';
+    const line3 =
+      'ffmpeg -i "data/input.mp4" -c:v libx264 -crf 20 "output3.mp4"';
+    const fileContent = [line0, line1, line2, line3].join("\n");
+
+    const result = new ParsedCommandFile(fileContent, [
+      "output1.mp4",
+      "output2.mp4",
+    ]);
+    const lines = result.uniqueContent.split("\n");
+    expect(lines.length).toBe(4);
+    expect(lines[0]).toBe(line0);
+    expect(lines[1]).toBe(
+      `${ParsedCommandFile.skipDuplicateOutputComment}${line1}`
+    );
+    expect(lines[2]).toBe(
+      `${ParsedCommandFile.skipDuplicateOutputComment}${line2}`
+    );
+    expect(lines[3]).toBe(line3);
+  });
 });

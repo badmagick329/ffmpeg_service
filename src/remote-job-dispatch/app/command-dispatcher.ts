@@ -68,19 +68,35 @@ export class CommandDispatcher {
     this.log(`Found ${commandFiles.length} command file(s) to process...`);
 
     for (const filePath of commandFiles) {
+      this.log(`\nProcessing: ${basename(filePath)}`);
+
+      const serverResult = await this.getServerOrSkip(filePath);
+      if (serverResult.kind === "skip") {
+        summary.commandFilesSkipped++;
+        summary.errors.push(serverResult.reason || "Unknown reason");
+        continue;
+      }
+
+      const server = serverResult.server;
+      const outputFilesInBatch = this.stateManager
+        .getAllPendingDownloads(server.serverName)
+        .map((d) => d.outputFile);
+
+      this.log(`  Target server: ${server.serverName}`);
       try {
-        await this.preprocessCommandFile(filePath);
-        const result = await this.processCommandFile(filePath);
+        await this.preprocessCommandFile(filePath, outputFilesInBatch);
+        const result = await this.processCommands(server, filePath);
 
         if (result.kind === "skip") {
           summary.commandFilesSkipped++;
           summary.errors.push(result.reason || "Unknown reason");
-        } else {
-          summary.commandFilesProcessed++;
-          summary.serversDispatched.push(result.server!);
-          summary.totalInputFilesUploaded += result.inputFilesUploaded || 0;
-          summary.totalOutputFilesExpected += result.outputFilesExpected || 0;
+          continue;
         }
+
+        summary.commandFilesProcessed++;
+        summary.serversDispatched.push(result.server!);
+        summary.totalInputFilesUploaded += result.inputFilesUploaded || 0;
+        summary.totalOutputFilesExpected += result.outputFilesExpected || 0;
       } catch (error) {
         summary.commandFilesSkipped++;
         summary.errors.push(`${basename(filePath)}: ${error}`);
@@ -147,32 +163,15 @@ export class CommandDispatcher {
     return commandFiles;
   }
 
-  private async preprocessCommandFile(filePath: string): Promise<void> {
-    const parsedFile = new ParsedCommandFile(await Bun.file(filePath).text());
+  private async preprocessCommandFile(
+    filePath: string,
+    outputFilesInBatch: string[]
+  ): Promise<void> {
+    const parsedFile = new ParsedCommandFile(
+      await Bun.file(filePath).text(),
+      outputFilesInBatch
+    );
     await Bun.file(filePath).write(parsedFile.uniqueContent);
-  }
-
-  private async processCommandFile(filePath: string): Promise<
-    | {
-        kind: "skip";
-        reason: string;
-      }
-    | {
-        kind: "ok";
-        server: string;
-        inputFilesUploaded: number;
-        outputFilesExpected: number;
-      }
-  > {
-    this.log(`\nProcessing: ${basename(filePath)}`);
-
-    const serverResult = await this.getServerOrSkip(filePath);
-    if (serverResult.kind === "skip") {
-      return { reason: serverResult.reason, kind: "skip" };
-    }
-    const server = serverResult.server;
-    this.log(`  Target server: ${server.serverName}`);
-    return await this.processCommands(server, filePath);
   }
 
   private async getServerOrSkip(filePath: string): Promise<

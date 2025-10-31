@@ -6,7 +6,10 @@ export class ParsedCommandFile {
 
   readonly uniqueContent: string;
 
-  constructor(readonly fileContent: string) {
+  constructor(
+    readonly fileContent: string,
+    readonly outputFilesInBatch: string[]
+  ) {
     this.uniqueContent = this.contentAsUniqueCommands();
   }
 
@@ -32,7 +35,9 @@ export class ParsedCommandFile {
       try {
         const output = ParsedCmd.create(line).output;
         lineToOutput.set(line, output);
-        outputCounter.set(output, (outputCounter.get(output) ?? 0) + 1);
+
+        const startAt = this.outputFilesInBatch.includes(output) ? 1 : 0;
+        outputCounter.set(output, (outputCounter.get(output) ?? startAt) + 1);
       } catch {}
     }
 
