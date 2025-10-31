@@ -52,6 +52,16 @@ export class Option<T> {
     }
   }
 
+  async filterAsync(
+    predicate: (value: T) => Promise<boolean>
+  ): Promise<Option<T>> {
+    if (this.isSome && (await predicate(this.value as T))) {
+      return this;
+    } else {
+      return Option.none<T>();
+    }
+  }
+
   match<U>(onSome: (value: T) => U, onNone: () => U): U {
     if (this.isSome) {
       return onSome(this.value as T);
