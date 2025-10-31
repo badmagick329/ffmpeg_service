@@ -7,7 +7,7 @@ type CmdParts = {
 
 export class ParsedCmd {
   private static cmdRegex =
-    /^(?<start>.+ .*-i\s+)"(?<input>(.+?))"(?<params>.+?)"(?<output>[^"]+)"$/;
+    /^(?<start>[^#]+ .*-i\s+)"(?<input>(.+?))"(?<params>.+?)"(?<output>[^"]+)"$/;
 
   constructor(
     public readonly cmd: string,

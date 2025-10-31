@@ -156,4 +156,38 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
     );
     expect(lines[3]).toBe(line3);
   });
+
+  it("should not comment out a command when there is no output file in batch", () => {
+    const line0 = "";
+    const line1 = "";
+    const line2 = './ffx.sh -i "input1.mp4" "output1.mp4"';
+    const line3 = "";
+    const line4 = "# ---";
+    const line5 = '# ./ffx.sh -i "input1.mp4" "output1.mp4"';
+    const line6 = '# ./ffx.sh -i "input2.mp4" "output2.mp4"';
+    const line7 = '# ./ffx.sh -i "input3.mp4" "output3.mp4"';
+
+    const fileContent = [
+      line0,
+      line1,
+      line2,
+      line3,
+      line4,
+      line5,
+      line6,
+      line7,
+    ].join("\n");
+
+    const result = new ParsedCommandFile(fileContent, []);
+    const lines = result.uniqueContent.split("\n");
+    expect(lines.length).toBe(8);
+    expect(lines[0]).toBe(line0);
+    expect(lines[1]).toBe(line1);
+    expect(lines[2]).toBe(line2);
+    expect(lines[3]).toBe(line3);
+    expect(lines[4]).toBe(line4);
+    expect(lines[5]).toBe(line5);
+    expect(lines[6]).toBe(line6);
+    expect(lines[7]).toBe(line7);
+  });
 });
