@@ -4,6 +4,7 @@ import { ClientStateManager } from "@/remote-job-dispatch/core/client-state-mana
 import { DownloadManager } from "@/remote-job-dispatch/app/download-manager";
 import { CommandDispatcher } from "@/remote-job-dispatch/app/command-dispatcher";
 import { SftpTransferClient } from "@/remote-job-dispatch/infra/sftp-transfer-client";
+import { ClientStateJsonStorage } from "@/remote-job-dispatch/infra/client-state-json-storage";
 
 async function main() {
   if (!config.serverConfigs || config.serverConfigs.length === 0) {
@@ -17,9 +18,11 @@ async function main() {
     sshCommandExecutor,
     transferClient
   );
+
+  const stateStorage = new ClientStateJsonStorage(config.clientStateFile);
   const stateManager = await ClientStateManager.create(
-    config.clientStateFile,
-    config.serverConfigs
+    config.serverConfigs,
+    stateStorage
   );
 
   await processPendingDownloads(fileOperations, stateManager);

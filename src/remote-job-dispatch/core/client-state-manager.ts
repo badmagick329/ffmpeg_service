@@ -54,23 +54,24 @@ export interface InterruptedOperation {
 }
 
 import type { ServerConfig } from "@/infra/config";
+import type { ClientStateStorage } from "@/remote-job-dispatch/core/client-state-storage";
 
 export class ClientStateManager {
   private constructor(
-    private stateFilePath: string,
-    private readonly state: ClientState
+    private readonly state: ClientState,
+    private readonly stateStorage: ClientStateStorage
   ) {}
 
   static async create(
-    stateFilePath: string,
-    serverConfigs: ServerConfig[]
+    serverConfigs: ServerConfig[],
+    stateStorage: ClientStateStorage
   ): Promise<ClientStateManager> {
-    let state = await ClientStateManager.loadState(stateFilePath);
+    let state = await stateStorage.loadState();
     state = await ClientStateManager.migrateState(state, serverConfigs);
 
-    const manager = new ClientStateManager(stateFilePath, state);
+    const manager = new ClientStateManager(state, stateStorage);
     // Persist migrated state if migration occurred
-    await manager.saveState();
+    await stateStorage.saveState(state);
 
     return manager;
   }
@@ -137,7 +138,7 @@ export class ClientStateManager {
     };
 
     this.state.servers[server].pendingDownloads.push(fullDownload);
-    await this.saveState();
+    await this.stateStorage.saveState(this.state);
   }
 
   async markDownloadInProgress(
@@ -155,7 +156,7 @@ export class ClientStateManager {
     if (download) {
       download.status = "downloading";
       download.lastChecked = new Date().toISOString();
-      await this.saveState();
+      await this.stateStorage.saveState(this.state);
     }
   }
 
@@ -173,7 +174,7 @@ export class ClientStateManager {
     );
     if (download) {
       download.status = "completed";
-      await this.saveState();
+      await this.stateStorage.saveState(this.state);
     }
   }
 
@@ -191,7 +192,7 @@ export class ClientStateManager {
     );
     if (download) {
       download.status = "interrupted";
-      await this.saveState();
+      await this.stateStorage.saveState(this.state);
     }
   }
 
@@ -213,7 +214,7 @@ export class ClientStateManager {
     };
 
     this.state.servers[server].uploadedInputFiles.push(fullInputFile);
-    await this.saveState();
+    await this.stateStorage.saveState(this.state);
   }
 
   getAllPendingDownloads(server: string): PendingDownload[] {
@@ -241,7 +242,7 @@ export class ClientStateManager {
 
   async removeServerState(server: string): Promise<void> {
     delete this.state.servers[server];
-    await this.saveState();
+    await this.stateStorage.saveState(this.state);
   }
 
   getInterruptedOperations(): InterruptedOperation[] {
@@ -303,7 +304,7 @@ export class ClientStateManager {
     }
 
     if (interrupted.length > 0) {
-      await this.saveState();
+      await this.stateStorage.saveState(this.state);
     }
   }
 
@@ -350,58 +351,6 @@ export class ClientStateManager {
         !pendingDownloads.map((p) => p.relatedInputFile).includes(i.localFile)
     );
     return unusedInputFiles;
-  }
-
-  private static async loadState(stateFilePath: string): Promise<ClientState> {
-    const file = Bun.file(stateFilePath);
-    if (!(await file.exists())) {
-      return {
-        version: "1.0",
-        servers: {},
-      };
-    }
-
-    try {
-      const content = await file.text();
-      const parsed = JSON.parse(content) as ClientState;
-
-      if (!parsed.version || !parsed.servers) {
-        throw new Error("Invalid state file structure");
-      }
-
-      return parsed;
-    } catch (error) {
-      console.error("Error loading state file:", error);
-      await ClientStateManager.backupCorruptedState(stateFilePath);
-      return {
-        version: "1.0",
-        servers: {},
-      };
-    }
-  }
-
-  private static async backupCorruptedState(
-    stateFilePath: string
-  ): Promise<void> {
-    const backupPath = `${stateFilePath}.backup`;
-    try {
-      await Bun.write(Bun.file(backupPath), Bun.file(stateFilePath));
-      console.log(
-        `State file corrupted, starting fresh. Backup saved to ${backupPath}`
-      );
-    } catch (error) {
-      console.error("Error backing up corrupted state file:", error);
-    }
-  }
-
-  private async saveState(): Promise<void> {
-    try {
-      const content = JSON.stringify(this.state, null, 2);
-      await Bun.file(this.stateFilePath).write(content);
-    } catch (error) {
-      console.error("Error saving state file:", error);
-      throw error;
-    }
   }
 
   /**
