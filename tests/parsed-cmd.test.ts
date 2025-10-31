@@ -84,4 +84,19 @@ describe("ParsedCmd.create", () => {
     expect(parsed.params).toBe(' -metadata title="My Video" -c:v libx264 ');
     expect(parsed.output).toBe("./output.mkv");
   });
+
+  it("should parse input and output even when they're not relative or absolute paths", () => {
+    const cmd =
+      'ffmpeg -y -hide_banner -nostdin -i "inputfile" -c:v libx264 "outputfile"';
+    const parsed = ParsedCmd.create(cmd);
+    expect(parsed.start).toBe("ffmpeg -y -hide_banner -nostdin -i ");
+    expect(parsed.input).toBe("inputfile");
+    expect(parsed.params).toBe(" -c:v libx264 ");
+    expect(parsed.output).toBe("outputfile");
+  });
+  it("should fail to parse input and output when they're not wrapped in quotes", () => {
+    const cmd =
+      "ffmpeg -y -hide_banner -nostdin -i inputfile -c:v libx264 outputfile";
+    expect(() => ParsedCmd.create(cmd)).toThrow();
+  });
 });

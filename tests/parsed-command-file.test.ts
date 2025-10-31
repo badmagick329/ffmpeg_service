@@ -1,13 +1,13 @@
 import { describe, it, expect } from "bun:test";
 import { ParsedCommandFile } from "@/remote-job-dispatch/core/parsed-command-file";
-import { ExceptionHandler, exceptions } from "winston";
 
 describe("ParsedCommandFile.contentAsUniqueCommands", () => {
   it("should keep last occurrence when exact duplicate lines exist", () => {
-    const duplicateCommand = 'ffmpeg -i "input.mp4" -c:v libx264 "output.mp4"';
+    const duplicateCommand =
+      'ffmpeg -i "videos/input.mp4" -c:v libx264 "output/output.mp4"';
     const fileContent = `${duplicateCommand}\n${duplicateCommand}\n${duplicateCommand}`;
 
-    const result = new ParsedCommandFile(fileContent);
+    const result = new ParsedCommandFile(fileContent, []);
 
     const lines = result.uniqueContent.split("\n");
     expect(lines[0]).toContain(ParsedCommandFile.skipDuplicateCommandComment);
@@ -18,13 +18,13 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
   });
 
   it("should keep last occurrence when commands have duplicate output files", () => {
-    const sameOutputFile = "output.mp4";
+    const sameOutputFile = "C:/media/output/output.mp4";
     const firstCommand = `ffmpeg -i "input1.mp4" -c:v libx264 "${sameOutputFile}"`;
-    const secondCommand = `ffmpeg -i "input2.mp4" -c:v libx265 "${sameOutputFile}"`;
-    const thirdCommand = `ffmpeg -i "input3.mp4" -crf 23 "${sameOutputFile}"`;
+    const secondCommand = `ffmpeg -i "/home/user/videos/input2.mp4" -c:v libx265 "${sameOutputFile}"`;
+    const thirdCommand = `ffmpeg -i "data/input3.mp4" -crf 23 "${sameOutputFile}"`;
     const fileContent = `${firstCommand}\n${secondCommand}\n${thirdCommand}`;
 
-    const result = new ParsedCommandFile(fileContent);
+    const result = new ParsedCommandFile(fileContent, []);
 
     const lines = result.uniqueContent.split("\n");
     expect(lines[0]).toContain(ParsedCommandFile.skipDuplicateOutputComment);
@@ -35,12 +35,13 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
   });
 
   it("should handle mix of unique and duplicate commands correctly", () => {
-    const uniqueCommand1 = 'ffmpeg -i "input1.mp4" "output1.mp4"';
-    const duplicateCommand = 'ffmpeg -i "input2.mp4" "output2.mp4"';
-    const uniqueCommand2 = 'ffmpeg -i "input3.mp4" "output3.mp4"';
+    const uniqueCommand1 =
+      'ffmpeg -i "/var/media/input1.mp4" "renders/output1.mp4"';
+    const duplicateCommand = 'ffmpeg -i "sources/input2.mp4" "output2.mp4"';
+    const uniqueCommand2 = 'ffmpeg -i "input3.mp4" "D:/projects/output3.mp4"';
     const fileContent = `${uniqueCommand1}\n${duplicateCommand}\n${uniqueCommand2}\n${duplicateCommand}`;
 
-    const result = new ParsedCommandFile(fileContent);
+    const result = new ParsedCommandFile(fileContent, []);
 
     const lines = result.uniqueContent.split("\n");
     expect(lines[0]).toBe(uniqueCommand1);
@@ -50,10 +51,10 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
   });
 
   it("should comment out only once when line is both exact duplicate and output duplicate", () => {
-    const command = 'ffmpeg -i "input.mp4" "output.mp4"';
+    const command = 'ffmpeg -i "assets/input.mp4" "C:/temp/output.mp4"';
     const fileContent = `${command}\n${command}`;
 
-    const result = new ParsedCommandFile(fileContent);
+    const result = new ParsedCommandFile(fileContent, []);
 
     const lines = result.uniqueContent.split("\n");
     expect(lines.length).toBe(2);
@@ -65,10 +66,11 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
   it("should pass through unparseable lines without deduplication", () => {
     const invalidCommand1 = "not a valid ffmpeg command";
     const invalidCommand2 = "also not valid";
-    const validCommand = 'ffmpeg -i "input.mp4" "output.mp4"';
+    const validCommand =
+      'ffmpeg -i "/mnt/storage/input.mp4" "exports/output.mp4"';
     const fileContent = `${invalidCommand1}\n${invalidCommand2}\n${validCommand}\n${invalidCommand1}`;
 
-    const result = new ParsedCommandFile(fileContent);
+    const result = new ParsedCommandFile(fileContent, []);
 
     const lines = result.uniqueContent.split("\n");
     expect(lines[0]).toContain(ParsedCommandFile.skipDuplicateCommandComment);
@@ -79,16 +81,18 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
   });
 
   it("should handle empty file content", () => {
-    const result = new ParsedCommandFile("");
+    const result = new ParsedCommandFile("", []);
 
     expect(result.uniqueContent).toBe("");
   });
 
   it("should handle realistic batch scenario with multiple duplicate types", () => {
     const uniqueCmd = 'ffmpeg -i "video1.mp4" "output1.mp4"';
-    const duplicateExactCmd = 'ffmpeg -i "video2.mp4" -crf 23 "output2.mp4"';
+    const duplicateExactCmd =
+      'ffmpeg -i "/home/user/video2.mp4" -crf 23 "output2.mp4"';
     const duplicateOutputCmd1 = 'ffmpeg -i "video3.mp4" -crf 20 "shared.mp4"';
-    const duplicateOutputCmd2 = 'ffmpeg -i "video4.mp4" -crf 25 "shared.mp4"';
+    const duplicateOutputCmd2 =
+      'ffmpeg -i "C:/videos/video4.mp4" -crf 25 "shared.mp4"';
     const fileContent = [
       uniqueCmd,
       duplicateExactCmd,
@@ -98,7 +102,7 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
       duplicateOutputCmd2,
     ].join("\n");
 
-    const result = new ParsedCommandFile(fileContent);
+    const result = new ParsedCommandFile(fileContent, []);
 
     const lines = result.uniqueContent.split("\n");
     expect(lines[0]).toContain(ParsedCommandFile.skipDuplicateCommandComment);
@@ -113,16 +117,20 @@ describe("ParsedCommandFile.contentAsUniqueCommands", () => {
   });
 
   it("should leave empty lines as they are and not flag them as duplicate", () => {
-    const fileContent = ["", "", "ffmpeg -i input.mp4 output.mp4", ""].join(
-      "\n"
-    );
+    const fileContent = [
+      "",
+      "",
+      `ffmpeg -i "raw/input.mp4" "/mnt/output/output.mp4"`,
+      "",
+    ].join("\n");
 
-    const result = new ParsedCommandFile(fileContent);
+    const result = new ParsedCommandFile(fileContent, []);
     const lines = result.uniqueContent.split("\n");
     expect(lines.length).toBe(4);
-    expect(lines[2]).toBe("ffmpeg -i input.mp4 output.mp4");
+    expect(lines[2]).toBe('ffmpeg -i "raw/input.mp4" "/mnt/output/output.mp4"');
     [lines[0], lines[1], lines[3]].forEach((l) => expect(l).toBe(""));
   });
+
   it("should comment out outputs present in the outputFilesInBatch list", () => {
     const line0 = 'ffmpeg -i "input.mp4" -c:v libx264 -crf 20 "output0.mp4"';
     const line1 =
