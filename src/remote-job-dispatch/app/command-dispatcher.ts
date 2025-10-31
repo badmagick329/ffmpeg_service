@@ -5,7 +5,7 @@ import { ServerSelector } from "@/remote-job-dispatch/core/server-selector";
 import { ParsedCmd } from "@/command-translation/parsed-cmd";
 import { createProgressBar } from "@/remote-job-dispatch/utils/progress-bar";
 import { readdir, exists } from "node:fs/promises";
-import { basename, resolve, join } from "path";
+import { basename, join } from "path";
 import { ParsedCommandFile } from "@/remote-job-dispatch/core/parsed-command-file";
 
 export interface DispatchSummary {
@@ -260,9 +260,10 @@ export class CommandDispatcher {
     };
   }
 
-  private async getNewInputFilesAndExpectedResults(
+  async getNewInputFilesAndExpectedResults(
     server: ServerConfig,
-    commands: string[]
+    commands: string[],
+    verifyExist = true
   ) {
     const skipInputs = [] as string[];
     const inputFiles = [] as string[];
@@ -276,26 +277,40 @@ export class CommandDispatcher {
     const pendingOutputs = this.stateManager
       .getAllPendingDownloads(server.serverName)
       .map((f) => f.outputFile);
+    const processedOutputs = [] as string[];
+
+    const isOutputAdded = (c: ParsedCmd) =>
+      pendingOutputs.includes(c.output) || processedOutputs.includes(c.output);
+    const isInputAdded = (c: ParsedCmd) => skipInputs.includes(c.input);
+    const isInputMissing = async (c: ParsedCmd) =>
+      verifyExist && !(await exists(c.input));
+    const shouldAddInput = (c: ParsedCmd) =>
+      !uploadedInputs.includes(c.input) && !inputFiles.includes(c.input);
 
     for (const command of commands) {
       const cmd = ParsedCmd.create(command);
-      if (pendingOutputs.includes(cmd.output)) {
+
+      if (isOutputAdded(cmd) || isInputAdded(cmd)) {
         continue;
       }
 
-      if (skipInputs.includes(cmd.input) || !(await exists(cmd.input))) {
+      if (await isInputMissing(cmd)) {
         skipInputs.push(cmd.input);
         this.log(`  ⚠️ Input file not found: ${cmd.input}`);
         continue;
       }
-      if (!uploadedInputs.includes(cmd.input)) {
+
+      if (shouldAddInput(cmd)) {
         inputFiles.push(cmd.input);
       }
       expectedResults.push({
         outputFile: cmd.output,
         relatedInputFile: cmd.input,
       });
+
+      processedOutputs.push(cmd.output);
     }
+
     return { inputFiles, expectedResults };
   }
 
