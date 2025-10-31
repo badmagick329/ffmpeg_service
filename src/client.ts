@@ -67,6 +67,9 @@ async function promptForInputFileCleanup(
   let unusedInputFilesOnServers =
     await stateManager.getUnusedInputFilesOnServers(config.serverConfigs);
 
+  if (unusedInputFilesOnServers.length === 0) {
+    return;
+  }
   console.log(unusedInputFilesOnServers.join("\n"));
   const yes =
     prompt(
