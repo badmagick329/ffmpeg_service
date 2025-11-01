@@ -43,8 +43,9 @@ export const config: ConfigType = {
 
 function populateDefaults() {
   config.serverConfigs.forEach((s) => {
+    const splitter = s.copyTo.includes("\\") ? "\\" : "/";
     if (!s.pauseWatchFlagFile) {
-      s.pauseWatchFlagFile = `${s.copyTo}/${config.pauseWatchFlag}`;
+      s.pauseWatchFlagFile = `${s.copyTo}${splitter}${config.pauseWatchFlag}`;
     }
   });
 }
