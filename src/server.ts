@@ -23,6 +23,8 @@ const mainLogger = logger.withContext({ service: "Main" });
 async function main() {
   mainLogger.info("Starting ffmpeg service");
   initDirectories();
+  const pauseWatchFlagFile = `${config.incomingDir}/${config.pauseWatchFlag}`;
+
   const inputsRepo = new SQLInputFilesRepo();
   const jobsRepo = new JobsRepository(appState, logger);
   const jobLifecycleService = new JobLifecycleService(jobsRepo);
@@ -32,7 +34,7 @@ async function main() {
   });
   const cmdTranslator = new CmdTranslator(pathTranslator);
 
-  startInputFilesWatcher(inputsRepo, config.inputFilesReconciliationInterval);
+  startInputFilesWatcher(inputsRepo, pauseWatchFlagFile);
   startFsCommandsWatcher(cmdTranslator, jobsRepo);
   startFFmpegJobExecutor(
     cmdTranslator,
@@ -47,15 +49,15 @@ async function main() {
 
 function startInputFilesWatcher(
   inputsRepo: SQLInputFilesRepo,
-  reconciliationInterval: number
+  pauseWatchFlagFile: string
 ) {
-  const watchService = new InputFilesWatchService(
+  const watchService = new InputFilesWatchService({
     inputsRepo,
-    new FsWatcher(config.incomingDir),
-    config.incomingDir,
-    reconciliationInterval,
-    logger
-  );
+    watcher: new FsWatcher(config.incomingDir),
+    inputsDir: config.incomingDir,
+    pauseWatchFlagFile,
+    logger,
+  });
   mainLogger.info("Starting input files watcher", {
     watchDir: config.incomingDir,
   });

@@ -65,6 +65,7 @@ describe("CommandDispatcher.getNewInputFilesAndExpectedResults", () => {
         remoteWorkDir: "/work",
         remoteCmdsDir: "/cmds",
         remoteSuccessDir: "/success",
+        pauseWatchFlagFile: "incoming",
         copyTo: "/to",
         copyFrom: "/from",
       },

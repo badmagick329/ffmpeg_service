@@ -266,7 +266,15 @@ export class CommandDispatcher {
       await this.getNewInputFilesAndExpectedResults(server, commands);
 
     await this.uploadCommandFile(server, filePath);
-    const uploadedCount = await this.uploadInputFiles(server, inputFiles);
+    const uploadCountResult = await this.uploadInputFiles(server, inputFiles);
+    if (uploadCountResult.isFailure) {
+      return Result.failure(
+        `Failed to upload input files: ${
+          uploadCountResult.unwrapError().message
+        }`
+      );
+    }
+    const uploadedCount = uploadCountResult.unwrap();
 
     for (const result of expectedResults) {
       const remoteFile = `${server.copyFrom}/${basename(result.outputFile)}`;
@@ -383,56 +391,80 @@ export class CommandDispatcher {
   private async uploadInputFiles(
     server: ServerConfig,
     inputFiles: string[]
-  ): Promise<number> {
+  ): Promise<Result<number, Error>> {
     if (inputFiles.length === 0) {
-      return 0;
+      return Result.success(0);
     }
 
     this.log(`  Uploading ${inputFiles.length} input file(s)...`);
-
-    let uploaded = 0;
-    let skipped = 0;
-
-    for (const file of inputFiles) {
-      const remoteFile = `${server.copyTo}/${basename(file)}`;
-
-      const shouldUpload = await this.fileOperations.shouldUploadFile(
-        server,
-        file,
-        remoteFile
+    const createFlagFile = await Result.fromThrowableAsync(async () => {
+      await Bun.file(server.pauseWatchFlagFile).write(
+        `Uploading ${inputFiles.length} input files`
       );
+      return server.pauseWatchFlagFile;
+    });
 
-      if (!shouldUpload) {
+    const uploadFiles = async (flagFile: string) => {
+      const uploadResult = await Result.fromThrowableAsync(async () => {
+        let uploaded = 0;
+        let skipped = 0;
+        for (const file of inputFiles) {
+          const remoteFile = `${server.copyTo}/${basename(file)}`;
+
+          const shouldUpload = await this.fileOperations.shouldUploadFile(
+            server,
+            file,
+            remoteFile
+          );
+
+          if (!shouldUpload) {
+            this.log(
+              `    Skipping ${basename(
+                file
+              )} - already exists with matching size`
+            );
+            skipped++;
+          } else {
+            this.log(`    ↑ Uploading: ${basename(file)}`);
+            const progressBar = createProgressBar();
+
+            await this.fileOperations.uploadFile(
+              server,
+              file,
+              remoteFile,
+              progressBar.show
+            );
+
+            progressBar.finish();
+            uploaded++;
+            this.log(`    ✓ Uploaded: ${basename(file)}`);
+          }
+
+          await this.stateManager.addUploadedInputFile(server.serverName, {
+            localFile: file,
+            remoteFile,
+          });
+        }
+
         this.log(
-          `    Skipping ${basename(file)} - already exists with matching size`
+          `  ${uploaded} uploaded, ${skipped} skipped, ${inputFiles.length} total`
         );
-        skipped++;
-      } else {
-        this.log(`    ↑ Uploading: ${basename(file)}`);
-        const progressBar = createProgressBar();
-
-        await this.fileOperations.uploadFile(
-          server,
-          file,
-          remoteFile,
-          progressBar.show
+        return uploaded;
+      });
+      const cleanupResult = await Result.fromThrowableAsync(async () => {
+        await Bun.file(flagFile).delete();
+      });
+      if (cleanupResult.isFailure) {
+        this.log(
+          `  ⚠️ Failed to remove pause watch flag file: ${
+            cleanupResult.unwrapError().message
+          }`
         );
-
-        progressBar.finish();
-        uploaded++;
-        this.log(`    ✓ Uploaded: ${basename(file)}`);
       }
 
-      await this.stateManager.addUploadedInputFile(server.serverName, {
-        localFile: file,
-        remoteFile,
-      });
-    }
+      return uploadResult;
+    };
 
-    this.log(
-      `  ${uploaded} uploaded, ${skipped} skipped, ${inputFiles.length} total`
-    );
-
-    return uploaded;
+    return await createFlagFile.flatMapAsync(uploadFiles);
   }
 }

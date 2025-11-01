@@ -1,24 +1,35 @@
 import type { IFsWatcher } from "@/fs-watcher";
 import type { InputFilesRepo } from "@/file-ingestion/input-files-repo";
 import type { Stats } from "fs";
-import * as fs from "node:fs/promises";
+import * as fs from "node:fs";
 import type { LoggerPort } from "@/common/logger-port";
 
 export class InputFilesWatchService {
+  private readonly inputsRepo: InputFilesRepo;
+  private readonly watcher: IFsWatcher;
+  private readonly inputsDir: string;
   private readonly log: LoggerPort;
-  constructor(
-    private readonly inputsRepo: InputFilesRepo,
-    private readonly watcher: IFsWatcher,
-    private readonly inputsDir: string,
-    private readonly reconciliationInterval: number,
-    logger: LoggerPort
-  ) {
-    if (
-      typeof reconciliationInterval !== "number" ||
-      reconciliationInterval <= 0
-    ) {
-      throw new Error("reconciliationInterval must be a positive number");
-    }
+  private pauseWatchFlagFile: string;
+
+  private watchPausedAt: number = 0;
+
+  constructor({
+    inputsRepo,
+    watcher,
+    inputsDir,
+    pauseWatchFlagFile,
+    logger,
+  }: {
+    inputsRepo: InputFilesRepo;
+    watcher: IFsWatcher;
+    inputsDir: string;
+    pauseWatchFlagFile: string;
+    logger: LoggerPort;
+  }) {
+    this.inputsRepo = inputsRepo;
+    this.watcher = watcher;
+    this.inputsDir = inputsDir;
+    this.pauseWatchFlagFile = pauseWatchFlagFile;
     this.log = logger.withContext({ service: "InputFilesWatchService" });
   }
 
@@ -27,23 +38,19 @@ export class InputFilesWatchService {
     this.watcher.onUnlink = this.onUnlink;
     this.watcher.onChange = () => undefined;
 
-    (async () => {
-      await this.reconcileInputFiles();
-      this.watcher.watch({ stabilityThreshold: 15000 });
-    })();
-  }
-
-  private async monitorInputFiles() {
-    await this.reconcileInputFiles();
-    while (true) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, this.reconciliationInterval)
-      );
-      await this.reconcileInputFiles();
-    }
+    this.reconcileInputFiles();
+    this.watcher.watch({ stabilityThreshold: 5000 });
   }
 
   private onAdd = (filepath: string, stats?: Stats): void => {
+    if (this.watchPausedAt > 0) {
+      return;
+    }
+    if (filepath === this.pauseWatchFlagFile) {
+      this.watchPausedAt = Date.now();
+      return;
+    }
+
     const result = this.inputsRepo.add(filepath);
     if (!result) {
       this.log.error(`Failed to add file: ${filepath}`, { filepath });
@@ -53,6 +60,12 @@ export class InputFilesWatchService {
   };
 
   private onUnlink = (filepath: string, stats?: Stats): void => {
+    if (filepath === this.pauseWatchFlagFile) {
+      this.watchPausedAt = 0;
+      this.reconcileInputFiles();
+      return;
+    }
+
     const result = this.inputsRepo.remove(filepath);
     if (!result) {
       this.log.error(`Failed to remove file: ${filepath}`, { filepath });
@@ -61,9 +74,9 @@ export class InputFilesWatchService {
     this.log.info(`File removed from repo: ${filepath}`, { filepath });
   };
 
-  private async reconcileInputFiles() {
+  private reconcileInputFiles() {
     try {
-      const inputFilesList = await fs.readdir(this.inputsDir);
+      const inputFilesList = fs.readdirSync(this.inputsDir);
       this.inputsRepo.reconcileInputFiles(inputFilesList);
     } catch (error) {
       this.log.error(`Error reconciling input dir: ${error}`, { error });

@@ -10,6 +10,7 @@ export type ServerConfig = {
   remoteWorkDir: string;
   remoteCmdsDir: string;
   remoteSuccessDir: string;
+  pauseWatchFlagFile: string;
   copyTo: string;
   copyFrom: string;
 };
@@ -24,6 +25,7 @@ type ConfigType = {
   serverConfigs: ServerConfig[];
   clientStateFile: string;
   successDir: string;
+  pauseWatchFlag: string;
 };
 
 export const config: ConfigType = {
@@ -36,7 +38,16 @@ export const config: ConfigType = {
   serverConfigs: conf.serverConfigs,
   clientStateFile: conf.clientStateFile,
   successDir: conf.successDir,
+  pauseWatchFlag: conf.pauseWatchFlag || "incoming",
 };
+
+function populateDefaults() {
+  config.serverConfigs.forEach((s) => {
+    if (!s.pauseWatchFlagFile) {
+      s.pauseWatchFlagFile = `${config.incomingDir}/${config.pauseWatchFlag}`;
+    }
+  });
+}
 
 function validateServerConfigs(configs: ServerConfig[]): void {
   const names = new Set<string>();
@@ -67,6 +78,7 @@ function validateServerConfigs(configs: ServerConfig[]): void {
   }
 }
 
+populateDefaults();
 validateServerConfigs(config.serverConfigs);
 
 export function initDirectories() {
