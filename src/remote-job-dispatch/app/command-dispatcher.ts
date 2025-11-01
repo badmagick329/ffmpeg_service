@@ -398,6 +398,9 @@ export class CommandDispatcher {
 
     this.log(`  Uploading ${inputFiles.length} input file(s)...`);
     const createFlagFile = await Result.fromThrowableAsync(async () => {
+      this.log(
+        `  Creating pause watch flag file: ${server.pauseWatchFlagFile}`
+      );
       await Bun.file(server.pauseWatchFlagFile).write(
         `Uploading ${inputFiles.length} input files`
       );
@@ -452,6 +455,9 @@ export class CommandDispatcher {
         return uploaded;
       });
       const cleanupResult = await Result.fromThrowableAsync(async () => {
+        this.log(
+          `  Removing pause watch flag file: ${server.pauseWatchFlagFile}`
+        );
         await Bun.file(flagFile).delete();
       });
       if (cleanupResult.isFailure) {

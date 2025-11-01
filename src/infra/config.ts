@@ -44,7 +44,7 @@ export const config: ConfigType = {
 function populateDefaults() {
   config.serverConfigs.forEach((s) => {
     if (!s.pauseWatchFlagFile) {
-      s.pauseWatchFlagFile = `${config.incomingDir}/${config.pauseWatchFlag}`;
+      s.pauseWatchFlagFile = `${s.copyTo}/${config.pauseWatchFlag}`;
     }
   });
 }

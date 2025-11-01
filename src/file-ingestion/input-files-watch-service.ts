@@ -48,6 +48,9 @@ export class InputFilesWatchService {
     }
     if (filepath === this.pauseWatchFlagFile) {
       this.watchPausedAt = Date.now();
+      this.log.info("Watch paused due to pause flag file detected", {
+        filepath,
+      });
       return;
     }
 
@@ -61,6 +64,9 @@ export class InputFilesWatchService {
 
   private onUnlink = (filepath: string, stats?: Stats): void => {
     if (filepath === this.pauseWatchFlagFile) {
+      this.log.info("Watch resumed due to pause flag file removed", {
+        filepath,
+      });
       this.watchPausedAt = 0;
       this.reconcileInputFiles();
       return;

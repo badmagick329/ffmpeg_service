@@ -68,6 +68,7 @@ async function promptForInputFileCleanup(
     await stateManager.getUnusedInputFilesOnServers(config.serverConfigs);
 
   if (unusedInputFilesOnServers.length === 0) {
+    console.log(" No unused input files found.");
     return;
   }
   console.log(unusedInputFilesOnServers.join("\n"));
