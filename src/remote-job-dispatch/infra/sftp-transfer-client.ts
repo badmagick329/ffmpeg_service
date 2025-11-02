@@ -4,7 +4,6 @@ import type {
   ProgressCallback,
 } from "@/remote-job-dispatch/core/itransfer-client";
 import { $ } from "bun";
-import { writeFile, unlink } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -25,7 +24,7 @@ export class SftpTransferClient implements ITransferClient {
     const batchContent = `put "${localFile}" "${remotePath}"\nbye\n`;
 
     try {
-      await writeFile(batchFile, batchContent);
+      await Bun.file(batchFile).write(batchContent);
 
       const sftpArgs = [
         ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
@@ -43,7 +42,7 @@ export class SftpTransferClient implements ITransferClient {
       throw error;
     } finally {
       try {
-        await unlink(batchFile);
+        await Bun.file(batchFile).delete();
       } catch (e) {}
     }
   }
@@ -62,7 +61,7 @@ export class SftpTransferClient implements ITransferClient {
     const batchContent = `get "${remotePath}" "${localFile}"\nbye\n`;
 
     try {
-      await writeFile(batchFile, batchContent);
+      await Bun.file(batchFile).write(batchContent);
 
       const sftpArgs = [
         ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
@@ -80,7 +79,7 @@ export class SftpTransferClient implements ITransferClient {
       throw error;
     } finally {
       try {
-        await unlink(batchFile);
+        await Bun.file(batchFile).delete();
       } catch (e) {}
     }
   }
