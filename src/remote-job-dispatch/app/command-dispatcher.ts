@@ -401,7 +401,9 @@ export class CommandDispatcher {
       this.log(
         `  Creating pause watch flag file: ${server.pauseWatchFlagFile}`
       );
-      await Bun.file(server.pauseWatchFlagFile).write(
+      await this.fileOperations.writeFile(
+        server,
+        server.pauseWatchFlagFile,
         `Uploading ${inputFiles.length} input files`
       );
       return server.pauseWatchFlagFile;
@@ -458,7 +460,7 @@ export class CommandDispatcher {
         this.log(
           `  Removing pause watch flag file: ${server.pauseWatchFlagFile}`
         );
-        await Bun.file(flagFile).delete();
+        await this.fileOperations.removeFile(server, flagFile);
       });
       if (cleanupResult.isFailure) {
         this.log(

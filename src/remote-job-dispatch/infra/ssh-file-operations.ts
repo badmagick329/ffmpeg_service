@@ -6,6 +6,8 @@ import type {
   ProgressCallback,
 } from "@/remote-job-dispatch/core/itransfer-client";
 import { basename } from "path";
+import { tmpdir } from "os";
+import { join } from "path";
 
 export class SshFileOperations implements IFileOperations {
   private readonly log = console.log;
@@ -168,5 +170,20 @@ export class SshFileOperations implements IFileOperations {
       failures.push(removalError);
     }
     return { removals, failures };
+  }
+
+  async writeFile(
+    server: ServerConfig,
+    remotePath: string,
+    content: string
+  ): Promise<void> {
+    const tempFile = join(tmpdir(), "temp-file");
+
+    try {
+      await Bun.file(tempFile).write(content);
+      await this.uploadFile(server, tempFile, remotePath);
+    } finally {
+      await Bun.file(tempFile).delete();
+    }
   }
 }

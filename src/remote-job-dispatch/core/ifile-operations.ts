@@ -49,4 +49,10 @@ export interface IFileOperations {
       error: string;
     }[];
   }>;
+
+  writeFile(
+    server: ServerConfig,
+    remotePath: string,
+    content: string
+  ): Promise<void>;
 }

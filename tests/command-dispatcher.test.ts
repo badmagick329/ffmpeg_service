@@ -24,6 +24,13 @@ class InMemoryStateStorage implements ClientStateStorage {
 }
 
 class MockFileOperations implements IFileOperations {
+  writeFile(
+    server: ServerConfig,
+    remotePath: string,
+    content: string
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
   async uploadFile(): Promise<void> {}
   async downloadFileAndCleanup(): Promise<void> {}
   async checkFileExists(): Promise<boolean> {
