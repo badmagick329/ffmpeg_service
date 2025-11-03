@@ -334,7 +334,7 @@ export class ClientStateManager {
 
       unusedInputFilesOnServers.push({
         server: server,
-        uploadedInputFiles: uploadedInputFiles,
+        uploadedInputFiles,
       });
     }
     return unusedInputFilesOnServers;
@@ -343,14 +343,22 @@ export class ClientStateManager {
   private async getUnusedInputFilesOnServer(
     server: ServerConfig
   ): Promise<UploadedInputFile[]> {
-    const inputFiles = this.getAllUploadedInputFiles(server.serverName);
-
-    const pendingDownloads = this.getAllPendingDownloads(server.serverName);
-    const unusedInputFiles = inputFiles.filter(
-      (i) =>
-        !pendingDownloads.map((p) => p.relatedInputFile).includes(i.localFile)
+    const inputFiles = Array.from(
+      new Map(
+        this.getAllUploadedInputFiles(server.serverName).map((item) => [
+          item.localFile,
+          item,
+        ])
+      ).values()
     );
-    return unusedInputFiles;
+
+    const inUseFiles = new Set(
+      this.getAllPendingDownloads(server.serverName)
+        .filter((p) => p.status !== "completed")
+        .map((p) => p.relatedInputFile)
+    );
+
+    return inputFiles.filter((f) => !inUseFiles.has(f.localFile));
   }
 
   /**
