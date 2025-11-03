@@ -2,6 +2,11 @@ import type { LogConfig } from "@/common/logger-port";
 import conf from "../../config.toml";
 import { mkdirSync } from "fs";
 
+const FLAGS = {
+  success: "done",
+  incoming: "incoming",
+} as const;
+
 export type ServerConfig = {
   serverName: string; // Human-friendly identifier (required, must be unique)
   sshHostIP: string; // IP address or hostname that resolves via DNS
@@ -10,6 +15,7 @@ export type ServerConfig = {
   remoteWorkDir: string;
   remoteCmdsDir: string;
   remoteSuccessDir: string;
+  successFlag: string;
   pauseWatchFlagFile: string;
   copyTo: string;
   copyFrom: string;
@@ -26,6 +32,7 @@ type ConfigType = {
   clientStateFile: string;
   successDir: string;
   pauseWatchFlag: string;
+  successFlag: string;
 };
 
 export const config: ConfigType = {
@@ -38,7 +45,8 @@ export const config: ConfigType = {
   serverConfigs: conf.serverConfigs,
   clientStateFile: conf.clientStateFile,
   successDir: conf.successDir,
-  pauseWatchFlag: conf.pauseWatchFlag || "incoming",
+  pauseWatchFlag: conf.pauseWatchFlag || FLAGS.incoming,
+  successFlag: FLAGS.success,
 };
 
 function populateDefaults() {
@@ -46,6 +54,9 @@ function populateDefaults() {
     const splitter = s.copyTo.includes("\\") ? "\\" : "/";
     if (!s.pauseWatchFlagFile) {
       s.pauseWatchFlagFile = `${s.copyTo}${splitter}${config.pauseWatchFlag}`;
+    }
+    if (!s.successFlag) {
+      s.successFlag = config.successFlag;
     }
   });
 }

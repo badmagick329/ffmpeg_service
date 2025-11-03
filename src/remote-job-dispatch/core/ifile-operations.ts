@@ -28,6 +28,7 @@ export interface IFileOperations {
     server: ServerConfig,
     outputFile: string
   ): Promise<boolean>;
+  getFilesReadyForDownload(server: ServerConfig): Promise<string[]>;
 
   removeFile(
     server: ServerConfig,

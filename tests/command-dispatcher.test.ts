@@ -42,6 +42,9 @@ class MockFileOperations implements IFileOperations {
   async isFileReadyForDownload(): Promise<boolean> {
     return true;
   }
+  async getFilesReadyForDownload(server: ServerConfig): Promise<string[]> {
+    throw new Error("Method not implemented.");
+  }
   async removeFile(): Promise<
     { remoteFile: string; error: string } | undefined
   > {
@@ -72,6 +75,7 @@ describe("CommandDispatcher.getNewInputFilesAndExpectedResults", () => {
         remoteWorkDir: "/work",
         remoteCmdsDir: "/cmds",
         remoteSuccessDir: "/success",
+        successFlag: "done",
         pauseWatchFlagFile: "incoming",
         copyTo: "/to",
         copyFrom: "/from",

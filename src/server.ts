@@ -36,12 +36,13 @@ async function main() {
 
   startInputFilesWatcher(inputsRepo, pauseWatchFlagFile);
   startFsCommandsWatcher(cmdTranslator, jobsRepo);
-  startFFmpegJobExecutor(
+  startFFmpegJobExecutor({
     cmdTranslator,
     jobLifecycleService,
-    config.jobPollInterval,
-    config.successDir
-  );
+    pollInterval: config.jobPollInterval,
+    successDir: config.successDir,
+    successFlag: config.successFlag,
+  });
   start(appState);
 
   mainLogger.info("ffmpeg service started.");
@@ -85,21 +86,29 @@ function startFsCommandsWatcher(
   fileCommandsWatcher.start();
 }
 
-function startFFmpegJobExecutor(
-  cmdTranslator: CmdTranslator,
-  jobLifecycleService: JobLifecycleService,
-  pollInterval: number,
-  successDir: string
-) {
+function startFFmpegJobExecutor({
+  cmdTranslator,
+  jobLifecycleService,
+  pollInterval,
+  successDir,
+  successFlag,
+}: {
+  cmdTranslator: CmdTranslator;
+  jobLifecycleService: JobLifecycleService;
+  pollInterval: number;
+  successDir: string;
+  successFlag: string;
+}) {
   const cmdRunner = new FFmpegCommandRunner(cmdTranslator, appState, logger);
-  const ffmpegJobExecutor = new FFmpegJobExecutor(
-    cmdRunner,
+  const ffmpegJobExecutor = new FFmpegJobExecutor({
+    runner: cmdRunner,
     cmdTranslator,
     jobLifecycleService,
     pollInterval,
     successDir,
-    logger
-  );
+    successFlag,
+    logger,
+  });
   ffmpegJobExecutor.start();
 }
 

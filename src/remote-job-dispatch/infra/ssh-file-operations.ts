@@ -44,9 +44,9 @@ export class SshFileOperations implements IFileOperations {
       onProgress
     );
     await this.removeFile(server, remotePath);
-    const successFile = `${server.remoteSuccessDir}/${basename(
-      remotePath
-    )}.done`;
+    const successFile = `${server.remoteSuccessDir}/${basename(remotePath)}.${
+      server.successFlag
+    }`;
     await this.removeFile(server, successFile);
   }
 
@@ -110,9 +110,9 @@ export class SshFileOperations implements IFileOperations {
     outputFile: string
   ): Promise<boolean> {
     const remoteFile = `${server.copyFrom}/${basename(outputFile)}`;
-    const successFile = `${server.remoteSuccessDir}/${basename(
-      remoteFile
-    )}.done`;
+    const successFile = `${server.remoteSuccessDir}/${basename(remoteFile)}.${
+      server.successFlag
+    }`;
 
     const successExists = await this.checkFileExists(server, successFile);
     if (!successExists) {
@@ -125,6 +125,20 @@ export class SshFileOperations implements IFileOperations {
     }
 
     return true;
+  }
+
+  async getFilesReadyForDownload(server: ServerConfig): Promise<string[]> {
+    return (
+      await this.sshCommandExecutor.execute(
+        server,
+        `ls ${server.remoteSuccessDir}`
+      )
+    )
+      .trim()
+      .split("\n")
+      .map((n) =>
+        n.replace(new RegExp(`(.+)(\\.${server.successFlag}$)`), "$1")
+      );
   }
 
   async removeFile(

@@ -6,15 +6,37 @@ import type { LoggerPort } from "@/common/logger-port";
 import { basename, join } from "node:path";
 
 export class FFmpegJobExecutor {
+  private readonly runner: IFFmpegCommandRunner;
+  private readonly cmdTranslator: ICmdTranslator;
+  private readonly jobLifecycleService: JobLifecycleService;
+  private readonly pollInterval: number;
+  private readonly successDir: string;
+  private readonly successFlag: string;
   private readonly log: LoggerPort;
-  constructor(
-    private readonly runner: IFFmpegCommandRunner,
-    private readonly cmdTranslator: ICmdTranslator,
-    private readonly jobLifecycleService: JobLifecycleService,
-    private readonly pollInterval: number,
-    private readonly successDir: string,
-    logger: LoggerPort
-  ) {
+
+  constructor({
+    runner,
+    cmdTranslator,
+    jobLifecycleService,
+    pollInterval,
+    successDir,
+    successFlag,
+    logger,
+  }: {
+    runner: IFFmpegCommandRunner;
+    cmdTranslator: ICmdTranslator;
+    jobLifecycleService: JobLifecycleService;
+    pollInterval: number;
+    successDir: string;
+    successFlag: string;
+    logger: LoggerPort;
+  }) {
+    this.runner = runner;
+    this.cmdTranslator = cmdTranslator;
+    this.jobLifecycleService = jobLifecycleService;
+    this.pollInterval = pollInterval;
+    this.successDir = successDir;
+    this.successFlag = successFlag;
     this.log = logger.withContext({ service: "FFmpegJobListener" });
   }
 
@@ -39,7 +61,7 @@ export class FFmpegJobExecutor {
           );
         }
         const cmd = ParsedCmd.create(job.localizedCmd);
-        const successName = `${basename(cmd.output)}.done`;
+        const successName = `${basename(cmd.output)}.${this.successFlag}`;
         const successFile = Bun.file(join(this.successDir, successName));
         await successFile.write(`Job ${job.id} completed successfully.`);
 

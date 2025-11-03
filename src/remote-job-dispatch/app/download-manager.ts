@@ -171,14 +171,13 @@ export class DownloadManager {
     this.log(
       `\nServer ${server.serverName}: Checking ${waitingDownloads.length} file(s)...`
     );
+    const readyFiles = await this.fileOperations.getFilesReadyForDownload(
+      server
+    );
 
     for (const download of waitingDownloads) {
-      const isReady = await this.fileOperations.isFileReadyForDownload(
-        server,
-        download.outputFile
-      );
-
-      if (!isReady) {
+      if (!readyFiles.includes(basename(download.outputFile))) {
+        this.log(`  • Not ready: ${basename(download.outputFile)}`);
         result.pending++;
         continue;
       }
