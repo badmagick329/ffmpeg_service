@@ -8,6 +8,13 @@ import type {
 import { basename } from "path";
 import { tmpdir } from "os";
 import { join } from "path";
+import { Result } from "@/common/result";
+import {
+  DownloadError,
+  RemoteFileNotFoundError,
+  UploadError,
+} from "@/remote-job-dispatch/core/errors/transfer-errors";
+import { CommandExecutionError } from "@/remote-job-dispatch/core/errors";
 
 export class SshFileOperations implements IFileOperations {
   private readonly log = console.log;
@@ -22,8 +29,13 @@ export class SshFileOperations implements IFileOperations {
     localPath: string,
     remotePath: string,
     onProgress?: ProgressCallback
-  ): Promise<void> {
-    await this.transferClient.upload(server, localPath, remotePath, onProgress);
+  ): Promise<Result<void, UploadError>> {
+    return await this.transferClient.upload(
+      server,
+      localPath,
+      remotePath,
+      onProgress
+    );
   }
 
   async downloadFileAndCleanup(
@@ -31,23 +43,29 @@ export class SshFileOperations implements IFileOperations {
     remotePath: string,
     localPath: string,
     onProgress?: ProgressCallback
-  ): Promise<void> {
+  ): Promise<Result<void, DownloadError | RemoteFileNotFoundError>> {
     if (!(await this.checkFileExists(server, remotePath))) {
       this.log(`Remote file does not exist: ${remotePath}`);
-      return;
+      return Result.failure(new RemoteFileNotFoundError(remotePath));
     }
 
-    await this.transferClient.download(
+    const downloadResult = await this.transferClient.download(
       server,
       remotePath,
       localPath,
       onProgress
     );
+    if (downloadResult.isFailure) {
+      return downloadResult;
+    }
+
     await this.removeFile(server, remotePath);
     const successFile = `${server.remoteSuccessDir}/${basename(remotePath)}.${
       server.successFlag
     }`;
     await this.removeFile(server, successFile);
+
+    return Result.success(undefined);
   }
 
   async checkFileExists(
@@ -127,42 +145,39 @@ export class SshFileOperations implements IFileOperations {
     return true;
   }
 
-  async getFilesReadyForDownload(server: ServerConfig): Promise<string[]> {
-    return (
-      await this.sshCommandExecutor.execute(
+  async getFilesReadyForDownload(
+    server: ServerConfig
+  ): Promise<Result<string[], CommandExecutionError>> {
+    try {
+      const executeResult = await this.sshCommandExecutor.execute(
         server,
         `ls ${server.remoteSuccessDir}`
-      )
-    )
-      .trim()
-      .split("\n")
-      .map((n) =>
-        n.replace(new RegExp(`(.+)(\\.${server.successFlag}$)`), "$1")
       );
+
+      return Result.success(
+        executeResult
+          .trim()
+          .split("\n")
+          .map((n) =>
+            n.replace(new RegExp(`(.+)(\\.${server.successFlag}$)`), "$1")
+          )
+      );
+    } catch (error) {
+      return Result.failure(new CommandExecutionError(String(error)));
+    }
   }
 
   async removeFile(
     server: ServerConfig,
     remoteFile: string
-  ): Promise<
-    | {
-        remoteFile: string;
-        error: string;
-      }
-    | undefined
-  > {
-    try {
+  ): Promise<Result<void, Error>> {
+    return await Result.fromThrowableAsync(async () => {
       const escapedPath = remoteFile.replace(/'/g, "'\\''");
       await this.sshCommandExecutor.execute(server, `rm -f '${escapedPath}'`);
-    } catch (error) {
-      return {
-        remoteFile,
-        error: String(error),
-      };
-    }
+    });
   }
 
-  async removeRemoteFiles(
+  async removeFiles(
     server: ServerConfig,
     remoteFiles: string[]
   ): Promise<{
@@ -176,12 +191,15 @@ export class SshFileOperations implements IFileOperations {
     const failures = [] as { remoteFile: string; error: string }[];
 
     for (const remoteFile of remoteFiles) {
-      const removalError = await this.removeFile(server, remoteFile);
-      if (!removalError) {
-        removals++;
+      const removeResult = await this.removeFile(server, remoteFile);
+      if (removeResult.isFailure) {
+        failures.push({
+          remoteFile,
+          error: String(removeResult.unwrapError()),
+        });
         continue;
       }
-      failures.push(removalError);
+      removals++;
     }
     return { removals, failures };
   }
@@ -190,14 +208,15 @@ export class SshFileOperations implements IFileOperations {
     server: ServerConfig,
     remotePath: string,
     content: string
-  ): Promise<void> {
+  ): Promise<Result<void, Error>> {
     const tempFile = join(tmpdir(), "temp-file");
-
-    try {
-      await Bun.file(tempFile).write(content);
-      await this.uploadFile(server, tempFile, remotePath);
-    } finally {
-      await Bun.file(tempFile).delete();
-    }
+    return await Result.fromThrowableAsync(async () => {
+      try {
+        await Bun.file(tempFile).write(content);
+        await this.uploadFile(server, tempFile, remotePath);
+      } finally {
+        await Bun.file(tempFile).delete();
+      }
+    });
   }
 }

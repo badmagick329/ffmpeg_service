@@ -8,11 +8,8 @@ import { readdir, exists } from "node:fs/promises";
 import { basename, join } from "path";
 import { ParsedCommandFile } from "@/remote-job-dispatch/core/parsed-command-file";
 import { Result } from "@/common/result";
-import {
-  ServerSelectionError,
-  FileReadError,
-  FileWriteError,
-} from "@/remote-job-dispatch/core/errors";
+import { ServerSelectionError } from "@/remote-job-dispatch/core/errors";
+import { FileIOError } from "../core/errors";
 
 export interface DispatchSummary {
   commandFilesProcessed: number;
@@ -185,14 +182,14 @@ export class CommandDispatcher {
   private async preprocessCommandFile(
     filePath: string,
     outputFilesInBatch: string[]
-  ): Promise<Result<void, FileReadError | FileWriteError>> {
+  ): Promise<Result<void, FileIOError>> {
     const readResult = await Result.fromThrowableAsync(async () =>
       Bun.file(filePath).text()
     );
 
     if (readResult.isFailure) {
       return Result.failure(
-        new FileReadError(filePath, readResult.unwrapError())
+        new FileIOError(filePath, "read", readResult.unwrapError())
       );
     }
 
@@ -205,7 +202,7 @@ export class CommandDispatcher {
 
     if (writeResult.isFailure) {
       return Result.failure(
-        new FileWriteError(filePath, writeResult.unwrapError())
+        new FileIOError(filePath, "write", writeResult.unwrapError())
       );
     }
 
@@ -357,14 +354,14 @@ export class CommandDispatcher {
 
   private async readCommandsUnique(
     filePath: string
-  ): Promise<Result<string[], FileReadError>> {
+  ): Promise<Result<string[], FileIOError>> {
     const commandsResult = await this.readCommands(filePath);
     return commandsResult.map((commands) => [...new Set(commands)]);
   }
 
   private async readCommands(
     filePath: string
-  ): Promise<Result<string[], FileReadError>> {
+  ): Promise<Result<string[], FileIOError>> {
     const result = await Result.fromThrowableAsync(async () => {
       const content = await Bun.file(filePath).text();
       return content
@@ -373,7 +370,7 @@ export class CommandDispatcher {
         .filter((line) => line && !line.startsWith("#"));
     });
 
-    return result.mapError((error) => new FileReadError(filePath, error));
+    return result.mapError((error) => new FileIOError(filePath, "read", error));
   }
 
   private async uploadCommandFile(

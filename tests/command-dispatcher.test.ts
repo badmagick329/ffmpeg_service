@@ -7,6 +7,17 @@ import {
   type ClientState,
 } from "@/remote-job-dispatch/core/client-state-manager";
 import type { ClientStateStorage } from "@/remote-job-dispatch/core/client-state-storage";
+import { Result } from "@/common/result";
+import type {
+  DownloadError,
+  RemoteFileNotFoundError,
+  UploadError,
+} from "@/remote-job-dispatch/core/errors/transfer-errors";
+import type {
+  CommandExecutionError,
+  FileIOError,
+  StateFileBackupError,
+} from "@/remote-job-dispatch/core/errors";
 
 class InMemoryStateStorage implements ClientStateStorage {
   private state: ClientState = {
@@ -14,25 +25,24 @@ class InMemoryStateStorage implements ClientStateStorage {
     servers: {},
   };
 
-  async saveState(state: ClientState): Promise<void> {
-    this.state = JSON.parse(JSON.stringify(state));
+  async saveState(state: ClientState): Promise<Result<void, FileIOError>> {
+    return (this.state = JSON.parse(JSON.stringify(state)));
   }
 
-  async loadState(): Promise<ClientState> {
+  async loadState(): Promise<Result<ClientState, StateFileBackupError>> {
     return JSON.parse(JSON.stringify(this.state));
   }
 }
 
 class MockFileOperations implements IFileOperations {
-  writeFile(
-    server: ServerConfig,
-    remotePath: string,
-    content: string
-  ): Promise<void> {
-    throw new Error("Method not implemented.");
+  async uploadFile(): Promise<Result<void, UploadError>> {
+    return Result.success(undefined);
   }
-  async uploadFile(): Promise<void> {}
-  async downloadFileAndCleanup(): Promise<void> {}
+  async downloadFileAndCleanup(): Promise<
+    Result<void, DownloadError | RemoteFileNotFoundError>
+  > {
+    return Result.success(undefined);
+  }
   async checkFileExists(): Promise<boolean> {
     return true;
   }
@@ -42,19 +52,26 @@ class MockFileOperations implements IFileOperations {
   async isFileReadyForDownload(): Promise<boolean> {
     return true;
   }
-  async getFilesReadyForDownload(server: ServerConfig): Promise<string[]> {
+  async getFilesReadyForDownload(
+    server: ServerConfig
+  ): Promise<Result<string[], CommandExecutionError>> {
     throw new Error("Method not implemented.");
   }
-  async removeFile(): Promise<
-    { remoteFile: string; error: string } | undefined
-  > {
-    return undefined;
+  async removeFile(): Promise<Result<void, Error>> {
+    return Result.success(undefined);
   }
-  async removeRemoteFiles(): Promise<{
+  async removeFiles(): Promise<{
     removals: number;
     failures: { remoteFile: string; error: string }[];
   }> {
     return { removals: 0, failures: [] };
+  }
+  writeFile(
+    server: ServerConfig,
+    remotePath: string,
+    content: string
+  ): Promise<Result<void, Error>> {
+    throw new Error("Method not implemented.");
   }
 }
 

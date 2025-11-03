@@ -1,3 +1,8 @@
+import { Result } from "@/common/result";
+import {
+  DownloadError,
+  UploadError,
+} from "@/remote-job-dispatch/core/errors/transfer-errors";
 import type { ServerConfig } from "@/infra/config";
 import { $ } from "bun";
 
@@ -12,7 +17,7 @@ export class ScpTranferClient implements ITransferClient {
     localFile: string,
     remoteFile: string,
     onProgress?: ProgressCallback
-  ): Promise<void> {
+  ): Promise<Result<void, UploadError>> {
     const remoteTarget = remoteFile.includes(":")
       ? remoteFile
       : `${server.sshUser}@${server.sshHostIP}:${remoteFile}`;
@@ -24,22 +29,25 @@ export class ScpTranferClient implements ITransferClient {
       localFile,
       remoteTarget,
     ];
-
-    try {
-      await $`scp ${scpArgs}`.text();
-      // NOTE: scp doesn't provide progress, callback is ignored
-    } catch (error) {
-      console.error("SCP Error:", error);
-      throw error;
-    }
+    return (
+      await Result.fromThrowableAsync(async () => {
+        try {
+          await $`scp ${scpArgs}`.text();
+          // NOTE: scp doesn't provide progress, callback is ignored
+        } catch (error) {
+          console.error("SCP Error:", error);
+          throw error;
+        }
+      })
+    ).mapError((e) => new UploadError(localFile, remoteFile, e));
   }
   async download(
     server: ServerConfig,
     remoteFile: string,
     localFile: string,
     onProgress?: ProgressCallback
-  ): Promise<void> {
-    const remoteSource = remoteFile.includes(":")
+  ): Promise<Result<void, DownloadError>> {
+    const remotePath = remoteFile.includes(":")
       ? remoteFile
       : `${server.sshUser}@${server.sshHostIP}:${remoteFile}`;
 
@@ -47,16 +55,20 @@ export class ScpTranferClient implements ITransferClient {
       ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
       "-o",
       "StrictHostKeyChecking=no",
-      remoteSource,
+      remotePath,
       localFile,
     ];
 
-    try {
-      await $`scp ${scpArgs}`.text();
-      // NOTE: scp doesn't provide progress, callback is ignored
-    } catch (error) {
-      console.error("SCP Error:", error);
-      throw error;
-    }
+    return (
+      await Result.fromThrowableAsync(async () => {
+        try {
+          await $`scp ${scpArgs}`.text();
+          // NOTE: scp doesn't provide progress, callback is ignored
+        } catch (error) {
+          console.error("SCP Error:", error);
+          throw error;
+        }
+      })
+    ).mapError((e) => new DownloadError(localFile, remotePath, e));
   }
 }

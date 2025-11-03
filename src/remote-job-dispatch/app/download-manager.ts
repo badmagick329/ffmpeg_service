@@ -4,6 +4,16 @@ import type { PendingDownload } from "@/remote-job-dispatch/core/client-state-ma
 import { ClientStateManager } from "@/remote-job-dispatch/core/client-state-manager";
 import { createProgressBar } from "@/remote-job-dispatch/utils/progress-bar";
 import { basename } from "path";
+import type {
+  FileIOError,
+  ServerNotFoundError,
+  StateFileBackupError,
+} from "@/remote-job-dispatch/core/errors";
+import { Result } from "@/common/result";
+import {
+  DownloadError,
+  RemoteFileNotFoundError,
+} from "@/remote-job-dispatch/core/errors/transfer-errors";
 
 export interface DownloadSummary {
   serversChecked: number;
@@ -171,9 +181,13 @@ export class DownloadManager {
     this.log(
       `\nServer ${server.serverName}: Checking ${waitingDownloads.length} file(s)...`
     );
-    const readyFiles = await this.fileOperations.getFilesReadyForDownload(
+    const readyFilesResult = await this.fileOperations.getFilesReadyForDownload(
       server
     );
+    if (readyFilesResult.isFailure) {
+      throw readyFilesResult.unwrapError();
+    }
+    const readyFiles = readyFilesResult.unwrap();
 
     for (const download of waitingDownloads) {
       if (!readyFiles.includes(basename(download.outputFile))) {
@@ -182,20 +196,24 @@ export class DownloadManager {
         continue;
       }
 
-      try {
-        this.log(`  ↓ Downloading: ${basename(download.outputFile)}...`);
-        const progressBar = createProgressBar();
+      this.log(`  ↓ Downloading: ${basename(download.outputFile)}...`);
+      const progressBar = createProgressBar();
 
-        await this.downloadReadyFile(server, download, progressBar.show);
-
-        progressBar.finish();
-        result.downloaded++;
-        this.log(`  ✓ Downloaded: ${basename(download.outputFile)}`);
-      } catch (error) {
+      const downloadReadyFileResult = await this.downloadReadyFile(
+        server,
+        download,
+        progressBar.show
+      );
+      if (downloadReadyFileResult.isFailure) {
         this.log(`  ✗ Failed to download: ${basename(download.outputFile)}`);
-        console.error(error);
+        console.error(downloadReadyFileResult.unwrapError());
         result.skipped++;
+        continue;
       }
+
+      progressBar.finish();
+      result.downloaded++;
+      this.log(`  ✓ Downloaded: ${basename(download.outputFile)}`);
     }
 
     if (this.stateManager.areAllDownloadsCompleted(server.serverName)) {
@@ -210,31 +228,50 @@ export class DownloadManager {
     server: ServerConfig,
     download: PendingDownload,
     onProgress?: (progress: any) => void
-  ): Promise<void> {
-    await this.stateManager.markDownloadInProgress(
+  ): Promise<
+    Result<
+      void,
+      | FileIOError
+      | ServerNotFoundError
+      | DownloadError
+      | RemoteFileNotFoundError
+    >
+  > {
+    const setDownloadingResult = await this.stateManager.markDownloadAs(
       server.serverName,
-      download.outputFile
+      download.outputFile,
+      "downloading"
     );
+    if (setDownloadingResult.isFailure) {
+      return setDownloadingResult;
+    }
 
-    try {
+    const downloadAndCleanupResult =
       await this.fileOperations.downloadFileAndCleanup(
         server,
         download.remoteFile,
         download.outputFile,
         onProgress
       );
-
-      await this.stateManager.markDownloadCompleted(
-        server.serverName,
-        download.outputFile
-      );
-    } catch (error) {
-      await this.stateManager.markDownloadInterrupted(
-        server.serverName,
-        download.outputFile
-      );
-      throw error;
+    if (downloadAndCleanupResult.isFailure) {
+      return downloadAndCleanupResult;
     }
+
+    const setCompletedResult = await this.stateManager.markDownloadAs(
+      server.serverName,
+      download.outputFile,
+      "completed"
+    );
+    if (setCompletedResult.isFailure) {
+      await this.stateManager.markDownloadAs(
+        server.serverName,
+        download.outputFile,
+        "interrupted"
+      );
+      return setCompletedResult;
+    }
+
+    return Result.success(undefined);
   }
 
   private async cleanupInputFilesOnServer(server: ServerConfig): Promise<void> {
@@ -252,7 +289,7 @@ export class DownloadManager {
       `Server ${server.serverName}: Cleaning up ${inputFiles.length} input file(s)...`
     );
 
-    const removalResult = await this.fileOperations.removeRemoteFiles(
+    const removalResult = await this.fileOperations.removeFiles(
       server,
       inputFiles.map((i) => i.remoteFile)
     );

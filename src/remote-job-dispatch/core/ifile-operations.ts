@@ -1,4 +1,11 @@
+import type { Result } from "@/common/result";
 import type { ServerConfig } from "@/infra/config";
+import type { CommandExecutionError } from "@/remote-job-dispatch/core/errors";
+import type {
+  DownloadError,
+  RemoteFileNotFoundError,
+  UploadError,
+} from "@/remote-job-dispatch/core/errors/transfer-errors";
 import type { ProgressCallback } from "@/remote-job-dispatch/core/itransfer-client";
 
 export interface IFileOperations {
@@ -7,14 +14,14 @@ export interface IFileOperations {
     localPath: string,
     remotePath: string,
     onProgress?: ProgressCallback
-  ): Promise<void>;
+  ): Promise<Result<void, UploadError>>;
 
   downloadFileAndCleanup(
     server: ServerConfig,
     remotePath: string,
     localPath: string,
     onProgress?: ProgressCallback
-  ): Promise<void>;
+  ): Promise<Result<void, DownloadError | RemoteFileNotFoundError>>;
 
   checkFileExists(server: ServerConfig, remotePath: string): Promise<boolean>;
 
@@ -28,19 +35,15 @@ export interface IFileOperations {
     server: ServerConfig,
     outputFile: string
   ): Promise<boolean>;
-  getFilesReadyForDownload(server: ServerConfig): Promise<string[]>;
+  getFilesReadyForDownload(
+    server: ServerConfig
+  ): Promise<Result<string[], CommandExecutionError>>;
 
   removeFile(
     server: ServerConfig,
     remoteFile: string
-  ): Promise<
-    | {
-        remoteFile: string;
-        error: string;
-      }
-    | undefined
-  >;
-  removeRemoteFiles(
+  ): Promise<Result<void, Error>>;
+  removeFiles(
     server: ServerConfig,
     remoteFiles: string[]
   ): Promise<{
@@ -55,5 +58,5 @@ export interface IFileOperations {
     server: ServerConfig,
     remotePath: string,
     content: string
-  ): Promise<void>;
+  ): Promise<Result<void, Error>>;
 }

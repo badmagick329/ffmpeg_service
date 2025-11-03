@@ -1,4 +1,9 @@
+import type { Result } from "@/common/result";
 import type { ServerConfig } from "@/infra/config";
+import type {
+  UploadError,
+  DownloadError,
+} from "@/remote-job-dispatch/core/errors/transfer-errors";
 
 export interface TransferProgress {
   bytesTransferred: number;
@@ -15,11 +20,11 @@ export interface ITransferClient {
     localFile: string,
     remoteFile: string,
     onProgress?: ProgressCallback
-  ): Promise<void>;
+  ): Promise<Result<void, UploadError>>;
   download(
     server: ServerConfig,
     remoteFile: string,
     localFile: string,
     onProgress?: ProgressCallback
-  ): Promise<void>;
+  ): Promise<Result<void, DownloadError>>;
 }

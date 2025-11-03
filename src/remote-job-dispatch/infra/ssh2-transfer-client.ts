@@ -8,6 +8,11 @@ import { basename } from "path";
 import { createReadStream, createWriteStream } from "fs";
 import { stat } from "fs/promises";
 import { pipeline } from "stream/promises";
+import {
+  UploadError,
+  DownloadError,
+} from "@/remote-job-dispatch/core/errors/transfer-errors";
+import { Result } from "@/common/result";
 
 export class Ssh2TransferClient implements ITransferClient {
   constructor(private readonly highWaterMark = 8 * 1024 * 1024) {}
@@ -17,32 +22,39 @@ export class Ssh2TransferClient implements ITransferClient {
     localFile: string,
     remoteFile: string,
     onProgress?: ProgressCallback
-  ): Promise<void> {
-    const client = await this.connect(server);
-
-    try {
-      const sftp = await this.getSftp(client);
-      const remotePath = remoteFile.split(":")[1] || remoteFile;
-      await this._upload(sftp, localFile, remotePath, onProgress);
-    } finally {
-      client.end();
-    }
+  ): Promise<Result<void, UploadError>> {
+    return (
+      await Result.fromThrowableAsync(async () => {
+        const client = await this.connect(server);
+        try {
+          const sftp = await this.getSftp(client);
+          const remotePath = remoteFile.split(":")[1] || remoteFile;
+          await this._upload(sftp, localFile, remotePath, onProgress);
+        } finally {
+          client.end();
+        }
+      })
+    ).mapError((e) => new UploadError(localFile, remoteFile, e));
   }
   async download(
     server: ServerConfig,
     remoteFile: string,
     localFile: string,
     onProgress?: ProgressCallback
-  ): Promise<void> {
-    const client = await this.connect(server);
+  ): Promise<Result<void, DownloadError>> {
+    return (
+      await Result.fromThrowableAsync(async () => {
+        const client = await this.connect(server);
 
-    try {
-      const sftp = await this.getSftp(client);
-      const remotePath = remoteFile.split(":")[1] || remoteFile;
-      await this._download(sftp, remotePath, localFile, onProgress);
-    } finally {
-      client.end();
-    }
+        try {
+          const sftp = await this.getSftp(client);
+          const remotePath = remoteFile.split(":")[1] || remoteFile;
+          await this._download(sftp, remotePath, localFile, onProgress);
+        } finally {
+          client.end();
+        }
+      })
+    ).mapError((e) => new DownloadError(remoteFile, localFile, e));
   }
 
   private async connect(server: ServerConfig): Promise<Client> {

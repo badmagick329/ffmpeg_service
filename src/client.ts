@@ -68,7 +68,7 @@ async function promptForInputFileCleanup(
     await stateManager.getUnusedInputFilesOnServers(config.serverConfigs);
 
   if (unusedInputFilesOnServers.length === 0) {
-    console.log(" No unused input files found.");
+    console.log("No unused input files found.");
     return;
   }
   console.log(unusedInputFilesOnServers.join("\n"));
@@ -78,7 +78,7 @@ async function promptForInputFileCleanup(
     )?.trim() === "y";
   if (yes) {
     for (const result of unusedInputFilesOnServers) {
-      await fileOperations.removeRemoteFiles(
+      await fileOperations.removeFiles(
         result.server,
         result.uploadedInputFiles.map((i) => i.remoteFile)
       );

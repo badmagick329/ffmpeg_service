@@ -5,6 +5,11 @@ import {
 } from "@/remote-job-dispatch/core/client-state-manager";
 import type { ClientStateStorage } from "@/remote-job-dispatch/core/client-state-storage";
 import type { ServerConfig } from "@/infra/config";
+import type {
+  FileIOError,
+  StateFileBackupError,
+} from "@/remote-job-dispatch/core/errors";
+import type { Result } from "@/common/result";
 
 class InMemoryStateStorage implements ClientStateStorage {
   private state: ClientState = {
@@ -12,11 +17,11 @@ class InMemoryStateStorage implements ClientStateStorage {
     servers: {},
   };
 
-  async saveState(state: ClientState): Promise<void> {
-    this.state = JSON.parse(JSON.stringify(state));
+  async saveState(state: ClientState): Promise<Result<void, FileIOError>> {
+    return (this.state = JSON.parse(JSON.stringify(state)));
   }
 
-  async loadState(): Promise<ClientState> {
+  async loadState(): Promise<Result<ClientState, StateFileBackupError>> {
     return JSON.parse(JSON.stringify(this.state));
   }
 
@@ -120,11 +125,11 @@ describe("ClientStateManager", () => {
         relatedInputFile: "input.mkv",
       });
 
-      await manager.markDownloadInProgress("server1", "output.mkv");
+      await manager.markDownloadAs("server1", "output.mkv", "downloading");
       let downloads = manager.getAllPendingDownloads("server1");
       expect(downloads[0]!.status).toBe("downloading");
 
-      await manager.markDownloadCompleted("server1", "output.mkv");
+      await manager.markDownloadAs("server1", "output.mkv", "completed");
       downloads = manager.getAllPendingDownloads("server1");
       expect(downloads[0]!.status).toBe("completed");
     });
@@ -143,7 +148,7 @@ describe("ClientStateManager", () => {
         relatedInputFile: "input2.mkv",
       });
 
-      await manager.markDownloadInProgress("server1", "downloading.mkv");
+      await manager.markDownloadAs("server1", "downloading.mkv", "downloading");
 
       const waitingDownloads = manager.getWaitingDownloads("server1");
       expect(waitingDownloads).toHaveLength(1);
@@ -166,10 +171,10 @@ describe("ClientStateManager", () => {
 
       expect(manager.areAllDownloadsCompleted("server1")).toBe(false);
 
-      await manager.markDownloadCompleted("server1", "output1.mkv");
+      await manager.markDownloadAs("server1", "output1.mkv", "completed");
       expect(manager.areAllDownloadsCompleted("server1")).toBe(false);
 
-      await manager.markDownloadCompleted("server1", "output2.mkv");
+      await manager.markDownloadAs("server1", "output2.mkv", "completed");
       expect(manager.areAllDownloadsCompleted("server1")).toBe(true);
     });
   });
@@ -228,7 +233,7 @@ describe("ClientStateManager", () => {
         remoteFile: "/work/output.mkv",
         relatedInputFile: "input.mkv",
       });
-      await manager.markDownloadInProgress("server1", "output.mkv");
+      await manager.markDownloadAs("server1", "output.mkv", "downloading");
 
       const interrupted = manager.getInterruptedOperations();
       expect(interrupted).toHaveLength(1);
@@ -245,7 +250,7 @@ describe("ClientStateManager", () => {
         remoteFile: "/work/output.mkv",
         relatedInputFile: "input.mkv",
       });
-      await manager.markDownloadInProgress("server1", "output.mkv");
+      await manager.markDownloadAs("server1", "output.mkv", "downloading");
 
       await manager.markInterruptedOperations();
 

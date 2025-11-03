@@ -53,8 +53,13 @@ export interface InterruptedOperation {
   operation: Operation;
 }
 
+import { Result } from "@/common/result";
 import type { ServerConfig } from "@/infra/config";
 import type { ClientStateStorage } from "@/remote-job-dispatch/core/client-state-storage";
+import {
+  FileIOError,
+  ServerNotFoundError,
+} from "@/remote-job-dispatch/core/errors";
 
 export class ClientStateManager {
   private constructor(
@@ -66,14 +71,22 @@ export class ClientStateManager {
     serverConfigs: ServerConfig[],
     stateStorage: ClientStateStorage
   ): Promise<ClientStateManager> {
-    let state = await stateStorage.loadState();
-    state = await ClientStateManager.migrateState(state, serverConfigs);
+    try {
+      let stateResult = await stateStorage.loadState();
+      if (stateResult.isFailure) {
+        throw stateResult.unwrapError();
+      }
+      let state = stateResult.unwrap();
+      state = await ClientStateManager.migrateState(state, serverConfigs);
 
-    const manager = new ClientStateManager(state, stateStorage);
-    // Persist migrated state if migration occurred
-    await stateStorage.saveState(state);
+      const manager = new ClientStateManager(state, stateStorage);
+      // Persist migrated state if migration occurred
+      await stateStorage.saveState(state);
 
-    return manager;
+      return manager;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -141,59 +154,24 @@ export class ClientStateManager {
     await this.stateStorage.saveState(this.state);
   }
 
-  async markDownloadInProgress(
+  async markDownloadAs(
     server: string,
-    outputFile: string
-  ): Promise<void> {
+    outputFile: string,
+    status: "downloading" | "completed" | "interrupted"
+  ): Promise<Result<void, FileIOError | ServerNotFoundError>> {
     const serverState = this.state.servers[server];
     if (!serverState) {
-      return;
+      return Result.failure(new ServerNotFoundError(server));
     }
 
     const download = serverState.pendingDownloads.find(
       (d) => d.outputFile === outputFile
     );
     if (download) {
-      download.status = "downloading";
-      download.lastChecked = new Date().toISOString();
-      await this.stateStorage.saveState(this.state);
+      download.status = status;
+      return await this.stateStorage.saveState(this.state);
     }
-  }
-
-  async markDownloadCompleted(
-    server: string,
-    outputFile: string
-  ): Promise<void> {
-    const serverState = this.state.servers[server];
-    if (!serverState) {
-      return;
-    }
-
-    const download = serverState.pendingDownloads.find(
-      (d) => d.outputFile === outputFile
-    );
-    if (download) {
-      download.status = "completed";
-      await this.stateStorage.saveState(this.state);
-    }
-  }
-
-  async markDownloadInterrupted(
-    server: string,
-    outputFile: string
-  ): Promise<void> {
-    const serverState = this.state.servers[server];
-    if (!serverState) {
-      return;
-    }
-
-    const download = serverState.pendingDownloads.find(
-      (d) => d.outputFile === outputFile
-    );
-    if (download) {
-      download.status = "interrupted";
-      await this.stateStorage.saveState(this.state);
-    }
+    return Result.success(undefined);
   }
 
   async addUploadedInputFile(
