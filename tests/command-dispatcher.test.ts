@@ -35,6 +35,11 @@ class InMemoryStateStorage implements ClientStateStorage {
 }
 
 class MockFileOperations implements IFileOperations {
+  getRemoteInputFiles(
+    server: ServerConfig
+  ): Promise<Result<string[], CommandExecutionError>> {
+    throw new Error("Method not implemented.");
+  }
   async uploadFile(): Promise<Result<void, UploadError>> {
     return Result.success(undefined);
   }

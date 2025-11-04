@@ -5,6 +5,7 @@ import { DownloadManager } from "@/remote-job-dispatch/app/download-manager";
 import { CommandDispatcher } from "@/remote-job-dispatch/app/command-dispatcher";
 import { SftpTransferClient } from "@/remote-job-dispatch/infra/sftp-transfer-client";
 import { ClientStateJsonStorage } from "@/remote-job-dispatch/infra/client-state-json-storage";
+import { basename } from "node:path";
 
 async function main() {
   if (!config.serverConfigs || config.serverConfigs.length === 0) {
@@ -64,35 +65,68 @@ async function promptForInputFileCleanup(
   stateManager: ClientStateManager
 ) {
   console.log("\n=== Checking for unused input files ===");
+
   let unusedInputFilesOnServers =
     await stateManager.getUnusedInputFilesOnServers(config.serverConfigs);
+  const inputFilesOnServerQueryResult = config.serverConfigs.map(
+    async (server) =>
+      (await fileOperations.getRemoteInputFiles(server)).map((files) => {
+        return { server, files };
+      })
+  );
+  const inputFilesOnServersResult = await Promise.all(
+    inputFilesOnServerQueryResult
+  );
+  inputFilesOnServersResult
+    .filter((r) => r.isFailure)
+    .forEach((e) => {
+      console.error("Error querying remote input files:", e.unwrapError());
+    });
+
+  const inputFilesOnServers = inputFilesOnServersResult
+    .filter((r) => r.isSuccess)
+    .map((r) => {
+      const { server, files } = r.unwrap();
+      return {
+        [server.serverName || server.sshHostIP]: new Set(files),
+      };
+    })
+    .reduce((a, b) => ({ ...a, ...b }), {});
+
+  unusedInputFilesOnServers = unusedInputFilesOnServers.map((f) => {
+    const filesOnServer =
+      inputFilesOnServers[f.server.serverName || f.server.sshHostIP];
+    return {
+      server: f.server,
+      uploadedInputFiles: f.uploadedInputFiles.filter((i) =>
+        filesOnServer?.has(basename(i.remoteFile))
+      ),
+    };
+  });
 
   if (unusedInputFilesOnServers.length === 0) {
     console.log("No unused input files found.");
     return;
   }
-  for (const unusedInputFilesOnServer of unusedInputFilesOnServers) {
-    console.log(
-      `Server: ${
-        unusedInputFilesOnServer.server.serverName ||
-        unusedInputFilesOnServer.server.sshHostIP
-      }`
-    );
-    for (const inputFile of unusedInputFilesOnServer.uploadedInputFiles) {
-      console.log(`  - ${inputFile.remoteFile}`);
-    }
-  }
+
+  unusedInputFilesOnServers.forEach((i) => {
+    console.log(`Server: ${i.server.serverName || i.server.sshHostIP}`);
+    i.uploadedInputFiles.forEach((f) => console.log(`  - ${f.remoteFile}`));
+  });
+
   const yes =
     prompt(
       "Remove the above input files which are no longer being used? [y/N] "
     )?.trim() === "y";
-  if (yes) {
-    for (const result of unusedInputFilesOnServers) {
-      await fileOperations.removeFiles(
-        result.server,
-        result.uploadedInputFiles.map((i) => i.remoteFile)
-      );
-    }
+  if (!yes) {
+    await Promise.all(
+      unusedInputFilesOnServers.map((result) =>
+        fileOperations.removeFiles(
+          result.server,
+          result.uploadedInputFiles.map((i) => i.remoteFile)
+        )
+      )
+    );
   }
 }
 

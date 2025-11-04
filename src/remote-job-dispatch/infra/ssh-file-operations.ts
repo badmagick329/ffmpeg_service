@@ -161,6 +161,29 @@ export class SshFileOperations implements IFileOperations {
           .map((n) =>
             n.replace(new RegExp(`(.+)(\\.${server.successFlag}$)`), "$1")
           )
+          .map((s) => s.trim())
+          .filter((s) => s !== "")
+      );
+    } catch (error) {
+      return Result.failure(new CommandExecutionError(String(error)));
+    }
+  }
+
+  async getRemoteInputFiles(
+    server: ServerConfig
+  ): Promise<Result<string[], CommandExecutionError>> {
+    try {
+      const executeResult = await this.sshCommandExecutor.execute(
+        server,
+        `ls ${server.copyTo}`
+      );
+
+      return Result.success(
+        executeResult
+          .trim()
+          .split("\n")
+          .map((s) => s.trim())
+          .filter((s) => s !== "")
       );
     } catch (error) {
       return Result.failure(new CommandExecutionError(String(error)));

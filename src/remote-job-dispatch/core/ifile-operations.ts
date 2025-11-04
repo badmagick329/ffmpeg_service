@@ -38,6 +38,9 @@ export interface IFileOperations {
   getFilesReadyForDownload(
     server: ServerConfig
   ): Promise<Result<string[], CommandExecutionError>>;
+  getRemoteInputFiles(
+    server: ServerConfig
+  ): Promise<Result<string[], CommandExecutionError>>;
 
   removeFile(
     server: ServerConfig,
