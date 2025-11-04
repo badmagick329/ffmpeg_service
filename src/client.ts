@@ -6,6 +6,7 @@ import { CommandDispatcher } from "@/remote-job-dispatch/app/command-dispatcher"
 import { SftpTransferClient } from "@/remote-job-dispatch/infra/sftp-transfer-client";
 import { ClientStateJsonStorage } from "@/remote-job-dispatch/infra/client-state-json-storage";
 import { basename } from "node:path";
+import type { RemovalsSummary } from "@/remote-job-dispatch/core/ifile-operations";
 
 async function main() {
   if (!config.serverConfigs || config.serverConfigs.length === 0) {
@@ -118,15 +119,27 @@ async function promptForInputFileCleanup(
     prompt(
       "Remove the above input files which are no longer being used? [y/N] "
     )?.trim() === "y";
-  if (!yes) {
-    await Promise.all(
-      unusedInputFilesOnServers.map((result) =>
-        fileOperations.removeFiles(
-          result.server,
-          result.uploadedInputFiles.map((i) => i.remoteFile)
-        )
-      )
+  if (yes) {
+    const removalSummary: RemovalsSummary = { removals: 0, failures: [] };
+    for (const unusedInputFilesOnServer of unusedInputFilesOnServers) {
+      const summary = await fileOperations.removeFiles(
+        unusedInputFilesOnServer.server,
+        unusedInputFilesOnServer.uploadedInputFiles.map((i) => i.remoteFile)
+      );
+      removalSummary.removals += summary.removals;
+      removalSummary.failures.push(...summary.failures);
+    }
+
+    console.log(
+      `Removed ${removalSummary.removals} input files.${
+        removalSummary.failures.length > 0
+          ? ` ${removalSummary.failures} failures.`
+          : ""
+      }`
     );
+    removalSummary.failures.forEach((f) => {
+      console.error(`Failed to remove ${f.remoteFile}: ${f.error}`);
+    });
   }
 }
 

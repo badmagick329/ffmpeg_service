@@ -8,6 +8,13 @@ import type {
 } from "@/remote-job-dispatch/core/errors/transfer-errors";
 import type { ProgressCallback } from "@/remote-job-dispatch/core/itransfer-client";
 
+export type RemovalsSummary = {
+  removals: number;
+  failures: {
+    remoteFile: string;
+    error: string;
+  }[];
+};
 export interface IFileOperations {
   uploadFile(
     server: ServerConfig,
