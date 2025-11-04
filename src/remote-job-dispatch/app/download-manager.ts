@@ -7,7 +7,6 @@ import { basename } from "path";
 import type {
   FileIOError,
   ServerNotFoundError,
-  StateFileBackupError,
 } from "@/remote-job-dispatch/core/errors";
 import { Result } from "@/common/result";
 import {
@@ -275,15 +274,24 @@ export class DownloadManager {
   }
 
   private async cleanupInputFilesOnServer(server: ServerConfig): Promise<void> {
-    const inputFiles = this.stateManager.getAllUploadedInputFiles(
+    const candidateInputFiles = this.stateManager.getAllUploadedInputFiles(
       server.serverName
     );
 
-    if (inputFiles.length === 0) {
+    if (candidateInputFiles.length === 0) {
       this.log(`Server ${server.serverName}: No input files to clean up`);
       await this.stateManager.removeServerState(server.serverName);
       return;
     }
+    const remoteFilesQuery = await this.fileOperations.getRemoteInputFiles(
+      server
+    );
+    const remoteFilesPresent = remoteFilesQuery.isSuccess
+      ? new Set(remoteFilesQuery.unwrap())
+      : new Set();
+    const inputFiles = candidateInputFiles.filter((i) =>
+      remoteFilesPresent.has(basename(i.remoteFile))
+    );
 
     this.log(
       `Server ${server.serverName}: Cleaning up ${inputFiles.length} input file(s)...`
