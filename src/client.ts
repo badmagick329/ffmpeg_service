@@ -71,7 +71,17 @@ async function promptForInputFileCleanup(
     console.log("No unused input files found.");
     return;
   }
-  console.log(unusedInputFilesOnServers.join("\n"));
+  for (const unusedInputFilesOnServer of unusedInputFilesOnServers) {
+    console.log(
+      `Server: ${
+        unusedInputFilesOnServer.server.serverName ||
+        unusedInputFilesOnServer.server.sshHostIP
+      }`
+    );
+    for (const inputFile of unusedInputFilesOnServer.uploadedInputFiles) {
+      console.log(`  - ${inputFile.remoteFile}`);
+    }
+  }
   const yes =
     prompt(
       "Remove the above input files which are no longer being used? [y/N] "
