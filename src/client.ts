@@ -5,8 +5,8 @@ import { DownloadManager } from "@/remote-job-dispatch/app/download-manager";
 import { CommandDispatcher } from "@/remote-job-dispatch/app/command-dispatcher";
 import { SftpTransferClient } from "@/remote-job-dispatch/infra/sftp-transfer-client";
 import { ClientStateJsonStorage } from "@/remote-job-dispatch/infra/client-state-json-storage";
-import { basename } from "node:path";
 import type { RemovalsSummary } from "@/remote-job-dispatch/core/ifile-operations";
+import { RemoteFileCleanup } from "@/remote-job-dispatch/app/remote-file-cleanup";
 
 async function main() {
   if (!config.serverConfigs || config.serverConfigs.length === 0) {
@@ -66,81 +66,60 @@ async function promptForInputFileCleanup(
   stateManager: ClientStateManager
 ) {
   console.log("\n=== Checking for unused input files ===");
-
-  let unusedInputFilesOnServers =
-    await stateManager.getUnusedInputFilesOnServers(config.serverConfigs);
-  const inputFilesOnServerQueryResult = config.serverConfigs.map(
-    async (server) =>
-      (await fileOperations.getRemoteInputFiles(server)).map((files) => {
-        return { server, files };
-      })
+  const remoteFileCleanup = new RemoteFileCleanup(
+    fileOperations,
+    stateManager,
+    config.serverConfigs
   );
-  const inputFilesOnServersResult = await Promise.all(
-    inputFilesOnServerQueryResult
+  const { remoteFilesByServer, errorsByServer } =
+    await remoteFileCleanup.fetchRemoteInputFiles();
+
+  for (const [server, error] of Object.entries(errorsByServer)) {
+    console.error(`Error fetching remote files from ${server}: ${error}`);
+  }
+
+  const filesToRemove = await remoteFileCleanup.findFilesToRemove(
+    remoteFilesByServer
   );
-  inputFilesOnServersResult
-    .filter((r) => r.isFailure)
-    .forEach((e) => {
-      console.error("Error querying remote input files:", e.unwrapError());
-    });
 
-  const inputFilesOnServers = inputFilesOnServersResult
-    .filter((r) => r.isSuccess)
-    .map((r) => {
-      const { server, files } = r.unwrap();
-      return {
-        [server.serverName || server.sshHostIP]: new Set(files),
-      };
-    })
-    .reduce((a, b) => ({ ...a, ...b }), {});
-
-  unusedInputFilesOnServers = unusedInputFilesOnServers.map((f) => {
-    const filesOnServer =
-      inputFilesOnServers[f.server.serverName || f.server.sshHostIP];
-    return {
-      server: f.server,
-      uploadedInputFiles: f.uploadedInputFiles.filter((i) =>
-        filesOnServer?.has(basename(i.remoteFile))
-      ),
-    };
-  });
-
-  if (unusedInputFilesOnServers.length === 0) {
+  if (filesToRemove.length === 0) {
     console.log("No unused input files found.");
     return;
   }
 
-  unusedInputFilesOnServers.forEach((i) => {
-    console.log(`Server: ${i.server.serverName || i.server.sshHostIP}`);
-    i.uploadedInputFiles.forEach((f) => console.log(`  - ${f.remoteFile}`));
+  filesToRemove.forEach((files) => {
+    console.log(`Server: ${files.server.serverName || files.server.sshHostIP}`);
+    files.uploadedInputFiles.forEach((f) => console.log(`  - ${f.remoteFile}`));
   });
 
   const yes =
     prompt(
-      "Remove the above input files which are no longer being used? [y/N] "
+      "Remove the above input file(s) which are no longer being used? [y/N] "
     )?.trim() === "y";
-  if (yes) {
-    const removalSummary: RemovalsSummary = { removals: 0, failures: [] };
-    for (const unusedInputFilesOnServer of unusedInputFilesOnServers) {
-      const summary = await fileOperations.removeFiles(
-        unusedInputFilesOnServer.server,
-        unusedInputFilesOnServer.uploadedInputFiles.map((i) => i.remoteFile)
-      );
-      removalSummary.removals += summary.removals;
-      removalSummary.failures.push(...summary.failures);
-    }
-
-    console.log(
-      `Removed ${removalSummary.removals} input files.${
-        removalSummary.failures.length > 0
-          ? ` ${removalSummary.failures} failures.`
-          : ""
-      }`
-    );
-    removalSummary.failures.forEach((f) => {
-      console.error(`Failed to remove ${f.remoteFile}: ${f.error}`);
-    });
+  if (!yes) {
+    return;
   }
+
+  const removalSummary: RemovalsSummary = { removals: 0, failures: [] };
+  for (const fileToRemove of filesToRemove) {
+    const summary = await fileOperations.removeFiles(
+      fileToRemove.server,
+      fileToRemove.uploadedInputFiles.map((i) => i.remoteFile)
+    );
+    removalSummary.removals += summary.removals;
+    removalSummary.failures.push(...summary.failures);
+  }
+
+  console.log(
+    `Removed ${removalSummary.removals} input files.${
+      removalSummary.failures.length > 0
+        ? ` ${removalSummary.failures} failure(s).`
+        : ""
+    }`
+  );
+  removalSummary.failures.forEach((f) => {
+    console.error(`Failed to remove ${f.remoteFile}: ${f.error}`);
+  });
 }
 
 main().catch((error) => {

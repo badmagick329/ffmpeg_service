@@ -165,7 +165,7 @@ export class SshFileOperations implements IFileOperations {
           .filter((s) => s !== "")
       );
     } catch (error) {
-      return Result.failure(new CommandExecutionError(String(error)));
+      return Result.failure(new CommandExecutionError(String(error), server));
     }
   }
 
@@ -186,7 +186,7 @@ export class SshFileOperations implements IFileOperations {
           .filter((s) => s !== "")
       );
     } catch (error) {
-      return Result.failure(new CommandExecutionError(String(error)));
+      return Result.failure(new CommandExecutionError(String(error), server));
     }
   }
 

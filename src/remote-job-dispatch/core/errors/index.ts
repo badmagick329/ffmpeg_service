@@ -1,3 +1,5 @@
+import type { ServerConfig } from "@/infra/config";
+
 export class FileIOError extends Error {
   constructor(
     public readonly filePath: string,
@@ -19,12 +21,13 @@ export class FileIOError extends Error {
 export class CommandExecutionError extends Error {
   constructor(
     public readonly command: string,
+    public readonly server: ServerConfig,
     public override readonly cause?: Error
   ) {
     super(
-      `Failed to execute command: ${command}${
-        cause ? ` - ${cause.message}` : ""
-      }`
+      `Failed to execute command on ${
+        server.serverName || server.sshHostIP
+      }: ${command}${cause ? ` - ${cause.message}` : ""}`
     );
     this.name = "CommandExecutionError";
     if (cause?.stack) {
