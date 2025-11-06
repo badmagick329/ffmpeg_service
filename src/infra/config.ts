@@ -2,9 +2,19 @@ import type { LogConfig } from "@/common/logger-port";
 import conf from "../../config.toml";
 import { mkdirSync } from "fs";
 
-const FLAGS = {
-  success: "done",
-  incoming: "incoming",
+const DEFAULTS = {
+  incomingDir: "./work/videos",
+  outgoingDir: "./work/videos_out",
+  successDir: "./work/success",
+  jobPollInterval: 10000,
+  cmdsInputDir: "./data/cmds",
+  logConfig: {
+    logLevel: "info",
+    logDir: "./logs",
+  },
+  clientStateFile: "./client-state.json",
+  pauseWatchFlag: "incoming",
+  successFlag: "done",
 } as const;
 
 export type RemoteConfig = {
@@ -34,17 +44,31 @@ type ConfigType = {
   successFlag: string;
 };
 
+// Raw inputs from TOML:
+if (
+  !conf.client?.remotes ||
+  !Array.isArray(conf.client.remotes) ||
+  conf.client.remotes.length === 0
+) {
+  throw new Error(
+    "Missing required 'client.remotes' array in config.toml. Please define at least one remote server."
+  );
+}
+
 export const config: ConfigType = {
-  incomingDir: conf.incomingDir,
-  outgoingDir: conf.outgoingDir,
-  cmdsInputDir: conf.cmdsInputDir,
-  jobPollInterval: conf.jobPollInterval,
-  logConfig: conf.logConfig,
-  remoteConfigs: conf.client.remotes,
-  clientStateFile: conf.client.stateFile,
-  successDir: conf.successDir,
-  pauseWatchFlag: conf.pauseWatchFlag || FLAGS.incoming,
-  successFlag: FLAGS.success,
+  // Server
+  incomingDir: conf.server.incomingDir ?? DEFAULTS.incomingDir,
+  outgoingDir: conf.server.outgoingDir ?? DEFAULTS.outgoingDir,
+  successDir: conf.server.successDir ?? DEFAULTS.successDir,
+  jobPollInterval: conf.server.jobPollInterval ?? DEFAULTS.jobPollInterval,
+  // Shared
+  cmdsInputDir: conf.shared.cmdsInputDir ?? DEFAULTS.cmdsInputDir,
+  logConfig: conf.shared.logConfig ?? DEFAULTS.logConfig,
+  // Client
+  remoteConfigs: conf.client.remotes, // <- REQUIRED IN CONFIG
+  clientStateFile: conf.client.stateFile ?? DEFAULTS.clientStateFile,
+  pauseWatchFlag: conf.client.pauseWatchFlag ?? DEFAULTS.pauseWatchFlag,
+  successFlag: conf.client.successFlag ?? DEFAULTS.successFlag,
 };
 
 function populateDefaults() {
@@ -59,25 +83,25 @@ function populateDefaults() {
   });
 }
 
-function validateServerConfigs(configs: RemoteConfig[]): void {
+function validateRemoteConfigs(configs: RemoteConfig[]): void {
   const names = new Set<string>();
   const ips = new Set<string>();
 
   for (const config of configs) {
     if (!config.serverName || config.serverName.trim() === "") {
       throw new Error(
-        `Server config missing serverName (IP: ${config.sshHostIP})`
+        `Remote config missing remoteName (IP: ${config.sshHostIP})`
       );
     }
 
     if (names.has(config.serverName)) {
-      throw new Error(`Duplicate serverName: ${config.serverName}`);
+      throw new Error(`Duplicate remoteName: ${config.serverName}`);
     }
     names.add(config.serverName);
 
     if (!/^[a-zA-Z0-9_-]+$/.test(config.serverName)) {
       throw new Error(
-        `Invalid serverName "${config.serverName}": must contain only letters, numbers, hyphens, and underscores`
+        `Invalid remoteName "${config.serverName}": must contain only letters, numbers, hyphens, and underscores`
       );
     }
 
@@ -89,7 +113,7 @@ function validateServerConfigs(configs: RemoteConfig[]): void {
 }
 
 populateDefaults();
-validateServerConfigs(config.remoteConfigs);
+validateRemoteConfigs(config.remoteConfigs);
 
 export function initDirectories() {
   mkdirSync(config.incomingDir, { recursive: true });

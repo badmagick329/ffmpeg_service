@@ -1,4 +1,5 @@
 # --------- Server Side Config ---------
+[server]
 incomingDir = "./work/videos"
 outgoingDir = "./work/videos_out"
 successDir = "./work/success"
@@ -8,12 +9,12 @@ jobPollInterval = 10000
 
 
 # ---------    Shared Config   ---------
+[shared]
 # on client: cmdsInputDir means where to copy ffmpeg commands from
 # on server: cmdsInputDir means where to watch for ffmpeg commands
 cmdsInputDir = './data/cmds'
 
-# Default log level and log dir:
-[logConfig]
+[shared.logConfig]
 logLevel = 'info'
 logDir = './logs'
 
@@ -22,34 +23,52 @@ logDir = './logs'
 [client]
 stateFile = "./client-state.json"
 
-# Multiple server configurations for distributed processing
-# Server selection uses a case-sensitive substring match: the client looks for each configured
-# `serverName` inside the command filename and routes the file to the matching server.
-# To avoid ambiguous matches, choose distinct serverNames (for example, `jobs_prod.sh` could match
-# `jobs` or `prod` if both are configured).
-# Examples:
-#   - server1_cmds.txt         → serverName "server1"
-#   - batch_dev.cmd            → serverName "batch_dev"
-#   - jobs_prod.sh             → may match "jobs" or "prod" depending on configured serverNames
-
-[[client.remotes]]
-serverName = "server1"  # Human-friendly name (required, must be unique, alphanumeric + hyphens/underscores only)
-sshHostIP = "192.168.1.100"  # IP address or DNS-resolvable hostname (do not use SSH config aliases)
-sshUser = "username1"
-sshKeyPath = "C:\\Users\\YourUser\\.ssh\\id_rsa"
-remoteWorkDir = "/home/username1/ffmpeg_service"
-remoteCmdsDir = "/home/username1/ffmpeg_service/data/cmds"
-remoteSuccessDir = "/home/username1/ffmpeg_service/work/success"
-copyTo = "/home/username1/ffmpeg_service/work/videos"
-copyFrom = "/home/username1/ffmpeg_service/work/videos_out"
-
-[[client.remotes]]
-serverName = "server2"  # Human-friendly name (required, must be unique, alphanumeric + hyphens/underscores only)
-sshHostIP = "192.168.1.101"  # IP address or DNS-resolvable hostname (do not use SSH config aliases)
-sshUser = "username2"
-sshKeyPath = "C:\\Users\\YourUser\\.ssh\\key2"
-remoteWorkDir = "/home/username2/ffmpeg_service"
-remoteCmdsDir = "/home/username2/ffmpeg_service/cmds"
-remoteSuccessDir = "/home/username2/stuff/ffmpeg/success"
-copyTo = "/home/username2/stuff/ffmpeg/incoming"
-copyFrom = "/home/username2/stuff/ffmpeg/outgoing"
+# ---- Remotes (required) -----------------------------------------------
+# The `[[client.remotes]]` table(s) define remote servers the client will use to
+# copy files and dispatch ffmpeg commands. All other top-level configuration
+# values have sensible defaults; at least one `[[client.remotes]]` entry is
+# REQUIRED for client mode.
+#
+# Required fields for each `[[client.remotes]]` entry:
+#   serverName       - unique human-friendly identifier used for routing. Must
+#                      match /^[A-Za-z0-9_-]+$/. Keep names distinct to avoid
+#                      ambiguous substring matches in filenames.
+#   sshHostIP        - IP address or DNS-resolvable hostname (do NOT use
+#                      SSH config aliases)
+#   sshUser          - remote username for SSH
+#   sshKeyPath       - local path to the private key used for authentication
+#   remoteWorkDir    - remote base directory for the service on the server
+#   remoteCmdsDir    - remote directory where command files are copied/watched
+#   remoteSuccessDir - remote directory used by the server to mark successful jobs
+#   copyTo           - remote path where local input files are copied to (incoming)
+#   copyFrom         - remote path where processed files are copied back (outgoing)
+#
+# Optional / auto-filled fields:
+#   pauseWatchFlagFile - if not provided, the client will set this to
+#                        "<copyTo>/<pauseWatchFlag>" using the configured
+#                        `pauseWatchFlag` value
+#   successFlag         - if not provided, defaults to the top-level `successFlag`
+#
+# Validation rules enforced by the client code:
+#  - `serverName` must be unique across all remotes and limited to letters,
+#    numbers, hyphens and underscores only.
+#  - The client determines which remote to use by searching for the configured
+#    `serverName` as a case-sensitive substring inside the command filename.
+#    To avoid accidental routing, choose names that are unlikely to appear in
+#    unrelated filenames (for example, avoid very short or common words).
+#
+# Minimal example remote block:
+# [[client.remotes]]
+# serverName = "server1"
+# sshHostIP = "192.168.1.100"
+# sshUser = "username1"
+# sshKeyPath = "C:\\Users\\YourUser\\.ssh\\id_rsa"
+# remoteWorkDir = "/home/username1/ffmpeg_service"
+# remoteCmdsDir = "/home/username1/ffmpeg_service/data/cmds"
+# remoteSuccessDir = "/home/username1/ffmpeg_service/work/success"
+# copyTo = "/home/username1/ffmpeg_service/work/videos"
+# copyFrom = "/home/username1/ffmpeg_service/work/videos_out"
+#
+# Note: this project populates sensible defaults for everything except the
+# `[[client.remotes]]` table(s). Configuring at least one remote is required for
+# the client to operate.
