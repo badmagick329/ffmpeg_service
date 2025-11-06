@@ -1,11 +1,11 @@
 import { Option } from "@/common/option";
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import { basename } from "path";
 
 export class ServerSelector {
-  constructor(private servers: ServerConfig[]) {}
+  constructor(private servers: RemoteConfig[]) {}
 
-  selectServer(filePath: string): Option<ServerConfig> {
+  selectServer(filePath: string): Option<RemoteConfig> {
     const filename = basename(filePath);
     const filenameWithoutExt = filename.replace(/\.[^/.]+$/, "");
 

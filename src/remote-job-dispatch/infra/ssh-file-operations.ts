@@ -1,4 +1,4 @@
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
 import type { IRemoteCommandExecutor } from "@/remote-job-dispatch/core/iremote-executor";
 import type {
@@ -25,7 +25,7 @@ export class SshFileOperations implements IFileOperations {
   ) {}
 
   async uploadFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     localPath: string,
     remotePath: string,
     onProgress?: ProgressCallback
@@ -39,7 +39,7 @@ export class SshFileOperations implements IFileOperations {
   }
 
   async downloadFileAndCleanup(
-    server: ServerConfig,
+    server: RemoteConfig,
     remotePath: string,
     localPath: string,
     onProgress?: ProgressCallback
@@ -69,7 +69,7 @@ export class SshFileOperations implements IFileOperations {
   }
 
   async checkFileExists(
-    server: ServerConfig,
+    server: RemoteConfig,
     remotePath: string
   ): Promise<boolean> {
     try {
@@ -83,7 +83,7 @@ export class SshFileOperations implements IFileOperations {
   }
 
   async shouldUploadFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     localPath: string,
     remotePath: string
   ): Promise<boolean> {
@@ -124,7 +124,7 @@ export class SshFileOperations implements IFileOperations {
   }
 
   async isFileReadyForDownload(
-    server: ServerConfig,
+    server: RemoteConfig,
     outputFile: string
   ): Promise<boolean> {
     const remoteFile = `${server.copyFrom}/${basename(outputFile)}`;
@@ -146,7 +146,7 @@ export class SshFileOperations implements IFileOperations {
   }
 
   async getFilesReadyForDownload(
-    server: ServerConfig
+    server: RemoteConfig
   ): Promise<Result<string[], CommandExecutionError>> {
     try {
       const executeResult = await this.sshCommandExecutor.execute(
@@ -170,7 +170,7 @@ export class SshFileOperations implements IFileOperations {
   }
 
   async getRemoteInputFiles(
-    server: ServerConfig
+    server: RemoteConfig
   ): Promise<Result<string[], CommandExecutionError>> {
     try {
       const executeResult = await this.sshCommandExecutor.execute(
@@ -191,7 +191,7 @@ export class SshFileOperations implements IFileOperations {
   }
 
   async removeFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     remoteFile: string
   ): Promise<Result<void, Error>> {
     return await Result.fromThrowableAsync(async () => {
@@ -201,7 +201,7 @@ export class SshFileOperations implements IFileOperations {
   }
 
   async removeFiles(
-    server: ServerConfig,
+    server: RemoteConfig,
     remoteFiles: string[]
   ): Promise<{
     removals: number;
@@ -228,7 +228,7 @@ export class SshFileOperations implements IFileOperations {
   }
 
   async writeFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     remotePath: string,
     content: string
   ): Promise<Result<void, Error>> {

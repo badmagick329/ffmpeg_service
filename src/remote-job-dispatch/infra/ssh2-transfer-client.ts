@@ -1,4 +1,4 @@
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type {
   ITransferClient,
   ProgressCallback,
@@ -18,7 +18,7 @@ export class Ssh2TransferClient implements ITransferClient {
   constructor(private readonly highWaterMark = 8 * 1024 * 1024) {}
 
   async upload(
-    server: ServerConfig,
+    server: RemoteConfig,
     localFile: string,
     remoteFile: string,
     onProgress?: ProgressCallback
@@ -37,7 +37,7 @@ export class Ssh2TransferClient implements ITransferClient {
     ).mapError((e) => new UploadError(localFile, remoteFile, e));
   }
   async download(
-    server: ServerConfig,
+    server: RemoteConfig,
     remoteFile: string,
     localFile: string,
     onProgress?: ProgressCallback
@@ -57,7 +57,7 @@ export class Ssh2TransferClient implements ITransferClient {
     ).mapError((e) => new DownloadError(remoteFile, localFile, e));
   }
 
-  private async connect(server: ServerConfig): Promise<Client> {
+  private async connect(server: RemoteConfig): Promise<Client> {
     return new Promise((resolve, reject) => {
       const client = new Client();
 

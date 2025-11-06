@@ -1,4 +1,4 @@
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type { IRemoteCommandExecutor } from "@/remote-job-dispatch/core/iremote-executor";
 
 import { Client, type SFTPWrapper, type ClientChannel } from "ssh2";
@@ -11,7 +11,7 @@ import type { ProgressCallback } from "@/remote-job-dispatch/core/itransfer-clie
 export class Ssh2Client implements IRemoteCommandExecutor {
   private static readonly highWaterMark = 8 * 1024 * 1024;
 
-  async execute(server: ServerConfig, command: string): Promise<string> {
+  async execute(server: RemoteConfig, command: string): Promise<string> {
     const client = await this.connect(server);
 
     try {
@@ -22,7 +22,7 @@ export class Ssh2Client implements IRemoteCommandExecutor {
   }
 
   async upload(
-    server: ServerConfig,
+    server: RemoteConfig,
     localFile: string,
     remoteFile: string,
     onProgress?: ProgressCallback
@@ -38,7 +38,7 @@ export class Ssh2Client implements IRemoteCommandExecutor {
     }
   }
   async download(
-    server: ServerConfig,
+    server: RemoteConfig,
     remoteFile: string,
     localFile: string,
     onProgress?: ProgressCallback
@@ -54,7 +54,7 @@ export class Ssh2Client implements IRemoteCommandExecutor {
     }
   }
 
-  private async connect(server: ServerConfig): Promise<Client> {
+  private async connect(server: RemoteConfig): Promise<Client> {
     return new Promise((resolve, reject) => {
       const client = new Client();
 

@@ -1,5 +1,5 @@
 import type { Result } from "@/common/result";
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type {
   UploadError,
   DownloadError,
@@ -16,13 +16,13 @@ export type ProgressCallback = (progress: TransferProgress) => void;
 
 export interface ITransferClient {
   upload(
-    server: ServerConfig,
+    server: RemoteConfig,
     localFile: string,
     remoteFile: string,
     onProgress?: ProgressCallback
   ): Promise<Result<void, UploadError>>;
   download(
-    server: ServerConfig,
+    server: RemoteConfig,
     remoteFile: string,
     localFile: string,
     onProgress?: ProgressCallback

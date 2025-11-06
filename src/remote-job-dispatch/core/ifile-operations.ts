@@ -1,5 +1,5 @@
 import type { Result } from "@/common/result";
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type { CommandExecutionError } from "@/remote-job-dispatch/core/errors";
 import type {
   DownloadError,
@@ -17,44 +17,44 @@ export type RemovalsSummary = {
 };
 export interface IFileOperations {
   uploadFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     localPath: string,
     remotePath: string,
     onProgress?: ProgressCallback
   ): Promise<Result<void, UploadError>>;
 
   downloadFileAndCleanup(
-    server: ServerConfig,
+    server: RemoteConfig,
     remotePath: string,
     localPath: string,
     onProgress?: ProgressCallback
   ): Promise<Result<void, DownloadError | RemoteFileNotFoundError>>;
 
-  checkFileExists(server: ServerConfig, remotePath: string): Promise<boolean>;
+  checkFileExists(server: RemoteConfig, remotePath: string): Promise<boolean>;
 
   shouldUploadFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     localPath: string,
     remotePath: string
   ): Promise<boolean>;
 
   isFileReadyForDownload(
-    server: ServerConfig,
+    server: RemoteConfig,
     outputFile: string
   ): Promise<boolean>;
   getFilesReadyForDownload(
-    server: ServerConfig
+    server: RemoteConfig
   ): Promise<Result<string[], CommandExecutionError>>;
   getRemoteInputFiles(
-    server: ServerConfig
+    server: RemoteConfig
   ): Promise<Result<string[], CommandExecutionError>>;
 
   removeFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     remoteFile: string
   ): Promise<Result<void, Error>>;
   removeFiles(
-    server: ServerConfig,
+    server: RemoteConfig,
     remoteFiles: string[]
   ): Promise<{
     removals: number;
@@ -65,7 +65,7 @@ export interface IFileOperations {
   }>;
 
   writeFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     remotePath: string,
     content: string
   ): Promise<Result<void, Error>>;

@@ -1,5 +1,5 @@
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 
 export interface IRemoteCommandExecutor {
-  execute(server: ServerConfig, command: string): Promise<string>;
+  execute(server: RemoteConfig, command: string): Promise<string>;
 }

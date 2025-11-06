@@ -3,7 +3,7 @@ import {
   DownloadError,
   UploadError,
 } from "@/remote-job-dispatch/core/errors/transfer-errors";
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import { $ } from "bun";
 
 import type {
@@ -13,7 +13,7 @@ import type {
 
 export class ScpTranferClient implements ITransferClient {
   async upload(
-    server: ServerConfig,
+    server: RemoteConfig,
     localFile: string,
     remoteFile: string,
     onProgress?: ProgressCallback
@@ -42,7 +42,7 @@ export class ScpTranferClient implements ITransferClient {
     ).mapError((e) => new UploadError(localFile, remoteFile, e));
   }
   async download(
-    server: ServerConfig,
+    server: RemoteConfig,
     remoteFile: string,
     localFile: string,
     onProgress?: ProgressCallback

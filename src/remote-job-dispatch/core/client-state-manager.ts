@@ -54,7 +54,7 @@ export interface InterruptedOperation {
 }
 
 import { Result } from "@/common/result";
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type { ClientStateStorage } from "@/remote-job-dispatch/core/client-state-storage";
 import {
   FileIOError,
@@ -68,7 +68,7 @@ export class ClientStateManager {
   ) {}
 
   static async create(
-    serverConfigs: ServerConfig[],
+    serverConfigs: RemoteConfig[],
     stateStorage: ClientStateStorage
   ): Promise<ClientStateManager> {
     try {
@@ -94,7 +94,7 @@ export class ClientStateManager {
    */
   private static async migrateState(
     state: ClientState,
-    serverConfigs: ServerConfig[]
+    serverConfigs: RemoteConfig[]
   ): Promise<ClientState> {
     const migratedServers: Record<string, ServerState> = {};
     let migrationOccurred = false;
@@ -292,14 +292,14 @@ export class ClientStateManager {
     );
   }
 
-  async getUnusedInputFilesOnServers(servers: ServerConfig[]): Promise<
+  async getUnusedInputFilesOnServers(servers: RemoteConfig[]): Promise<
     {
-      server: ServerConfig;
+      server: RemoteConfig;
       uploadedInputFiles: UploadedInputFile[];
     }[]
   > {
     let unusedInputFilesOnServers = [] as {
-      server: ServerConfig;
+      server: RemoteConfig;
       uploadedInputFiles: UploadedInputFile[];
     }[];
 
@@ -319,7 +319,7 @@ export class ClientStateManager {
   }
 
   private async getUnusedInputFilesOnServer(
-    server: ServerConfig
+    server: RemoteConfig
   ): Promise<UploadedInputFile[]> {
     const inputFiles = Array.from(
       new Map(

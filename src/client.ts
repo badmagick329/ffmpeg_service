@@ -9,7 +9,7 @@ import type { RemovalsSummary } from "@/remote-job-dispatch/core/ifile-operation
 import { RemoteFileCleanup } from "@/remote-job-dispatch/app/remote-file-cleanup";
 
 async function main() {
-  if (!config.serverConfigs || config.serverConfigs.length === 0) {
+  if (!config.remoteConfigs || config.remoteConfigs.length === 0) {
     console.error("No server configurations found in config.toml");
     process.exit(1);
   }
@@ -23,7 +23,7 @@ async function main() {
 
   const stateStorage = new ClientStateJsonStorage(config.clientStateFile);
   const stateManager = await ClientStateManager.create(
-    config.serverConfigs,
+    config.remoteConfigs,
     stateStorage
   );
 
@@ -40,7 +40,7 @@ async function processPendingDownloads(
   const downloadManager = new DownloadManager({
     fileOperations,
     stateManager,
-    serverConfigs: config.serverConfigs,
+    serverConfigs: config.remoteConfigs,
   });
   const downloadSummary = await downloadManager.processAllPendingDownloads();
   console.log(downloadSummary.text);
@@ -55,7 +55,7 @@ async function dispatchNewCommands(
     fileOperations,
     stateManager,
     cmdsInputDir: config.cmdsInputDir,
-    serverConfigs: config.serverConfigs,
+    serverConfigs: config.remoteConfigs,
   });
   const dispatchSummary = await commandDispatcher.dispatchAllCommands();
   console.log(dispatchSummary.text);
@@ -69,7 +69,7 @@ async function promptForInputFileCleanup(
   const remoteFileCleanup = new RemoteFileCleanup(
     fileOperations,
     stateManager,
-    config.serverConfigs
+    config.remoteConfigs
   );
   const { remoteFilesByServer, errorsByServer } =
     await remoteFileCleanup.fetchRemoteInputFiles();

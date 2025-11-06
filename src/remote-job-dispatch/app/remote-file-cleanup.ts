@@ -1,4 +1,4 @@
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import { basename } from "node:path";
 import type { ClientStateManager } from "@/remote-job-dispatch/core/client-state-manager";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
@@ -7,7 +7,7 @@ export class RemoteFileCleanup {
   constructor(
     private readonly fileOperations: IFileOperations,
     private readonly stateManager: ClientStateManager,
-    private readonly servers: ServerConfig[]
+    private readonly servers: RemoteConfig[]
   ) {}
 
   async fetchRemoteInputFiles() {

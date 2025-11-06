@@ -1,4 +1,4 @@
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
 import { ClientStateManager } from "@/remote-job-dispatch/core/client-state-manager";
 import { ServerSelector } from "@/remote-job-dispatch/core/server-selector";
@@ -31,7 +31,7 @@ export class CommandDispatcher {
   private fileOperations: IFileOperations;
   private stateManager: ClientStateManager;
   private cmdsInputDir: string;
-  private serverConfigs: ServerConfig[];
+  private serverConfigs: RemoteConfig[];
 
   constructor({
     fileOperations,
@@ -42,7 +42,7 @@ export class CommandDispatcher {
     fileOperations: IFileOperations;
     stateManager: ClientStateManager;
     cmdsInputDir: string;
-    serverConfigs: ServerConfig[];
+    serverConfigs: RemoteConfig[];
   }) {
     this.fileOperations = fileOperations;
     this.stateManager = stateManager;
@@ -211,7 +211,7 @@ export class CommandDispatcher {
 
   private async getServerOrSkip(
     filePath: string
-  ): Promise<Result<ServerConfig, ServerSelectionError>> {
+  ): Promise<Result<RemoteConfig, ServerSelectionError>> {
     const serverSelector = new ServerSelector(this.serverConfigs);
     const result = serverSelector.selectServer(filePath);
 
@@ -230,7 +230,7 @@ export class CommandDispatcher {
   }
 
   private async processCommands(
-    server: ServerConfig,
+    server: RemoteConfig,
     filePath: string
   ): Promise<
     Result<
@@ -293,7 +293,7 @@ export class CommandDispatcher {
   }
 
   async getNewInputFilesAndExpectedResults(
-    server: ServerConfig,
+    server: RemoteConfig,
     commands: string[],
     verifyExist = true
   ): Promise<{
@@ -374,7 +374,7 @@ export class CommandDispatcher {
   }
 
   private async uploadCommandFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     filePath: string
   ): Promise<void> {
     this.log(`  Uploading command file to ${server.serverName}...`);
@@ -386,7 +386,7 @@ export class CommandDispatcher {
   }
 
   private async uploadInputFiles(
-    server: ServerConfig,
+    server: RemoteConfig,
     inputFiles: string[]
   ): Promise<Result<number, Error>> {
     if (inputFiles.length === 0) {

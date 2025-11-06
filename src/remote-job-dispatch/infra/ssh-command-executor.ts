@@ -1,9 +1,9 @@
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type { IRemoteCommandExecutor } from "@/remote-job-dispatch/core/iremote-executor";
 import { $ } from "bun";
 
 export class SshCommandExecutor implements IRemoteCommandExecutor {
-  async execute(server: ServerConfig, command: string): Promise<string> {
+  async execute(server: RemoteConfig, command: string): Promise<string> {
     const sshArgs = [
       ...(server.sshKeyPath ? ["-i", server.sshKeyPath] : []),
       "-o",

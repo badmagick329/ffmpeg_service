@@ -7,7 +7,7 @@ const FLAGS = {
   incoming: "incoming",
 } as const;
 
-export type ServerConfig = {
+export type RemoteConfig = {
   serverName: string; // Human-friendly identifier (required, must be unique)
   sshHostIP: string; // IP address or hostname that resolves via DNS
   sshUser: string;
@@ -26,9 +26,8 @@ type ConfigType = {
   outgoingDir: string;
   cmdsInputDir: string;
   jobPollInterval: number;
-  inputFilesReconciliationInterval: number;
   logConfig: LogConfig;
-  serverConfigs: ServerConfig[];
+  remoteConfigs: RemoteConfig[];
   clientStateFile: string;
   successDir: string;
   pauseWatchFlag: string;
@@ -40,17 +39,16 @@ export const config: ConfigType = {
   outgoingDir: conf.outgoingDir,
   cmdsInputDir: conf.cmdsInputDir,
   jobPollInterval: conf.jobPollInterval,
-  inputFilesReconciliationInterval: conf.inputFilesReconciliationInterval,
   logConfig: conf.logConfig,
-  serverConfigs: conf.serverConfigs,
-  clientStateFile: conf.clientStateFile,
+  remoteConfigs: conf.client.remotes,
+  clientStateFile: conf.client.stateFile,
   successDir: conf.successDir,
   pauseWatchFlag: conf.pauseWatchFlag || FLAGS.incoming,
   successFlag: FLAGS.success,
 };
 
 function populateDefaults() {
-  config.serverConfigs.forEach((s) => {
+  config.remoteConfigs.forEach((s) => {
     const splitter = s.copyTo.includes("\\") ? "\\" : "/";
     if (!s.pauseWatchFlagFile) {
       s.pauseWatchFlagFile = `${s.copyTo}${splitter}${config.pauseWatchFlag}`;
@@ -61,7 +59,7 @@ function populateDefaults() {
   });
 }
 
-function validateServerConfigs(configs: ServerConfig[]): void {
+function validateServerConfigs(configs: RemoteConfig[]): void {
   const names = new Set<string>();
   const ips = new Set<string>();
 
@@ -91,7 +89,7 @@ function validateServerConfigs(configs: ServerConfig[]): void {
 }
 
 populateDefaults();
-validateServerConfigs(config.serverConfigs);
+validateServerConfigs(config.remoteConfigs);
 
 export function initDirectories() {
   mkdirSync(config.incomingDir, { recursive: true });

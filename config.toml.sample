@@ -1,34 +1,38 @@
-incomingDir = "./data/incoming"
-outgoingDir = "./data/outgoing"
+# --------- Server Side Config ---------
+incomingDir = "./work/videos"
+outgoingDir = "./work/videos_out"
+successDir = "./work/success"
 
-# This is where the completed files will be downloaded to
+# 10 seconds - poll for new jobs every 10 seconds
+jobPollInterval = 10000
 
-# This is where the files with ffmpeg commands are read from
+
+# ---------    Shared Config   ---------
+# on client: cmdsInputDir means where to copy ffmpeg commands from
+# on server: cmdsInputDir means where to watch for ffmpeg commands
 cmdsInputDir = './data/cmds'
 
-# Client state file to track pending operations
-clientStateFile = "./client-state.json"
-
-successDir = "./data/success"
-
-# 10 seconds (milliseconds)
-jobPollInterval = 10000
-# 10 minutes (milliseconds)
-inputFilesReconciliationInterval = 600000
-
+# Default log level and log dir:
 [logConfig]
 logLevel = 'info'
 logDir = './logs'
 
-# Multiple server configurations for distributed processing
-# File naming convention: include serverName in command filename
-# Examples:
-#   - commands_server1.txt → goes to server with serverName "server1"
-#   - ffmpeg_mgck.ps1 → goes to server with serverName "mgck"
-#   - batch_dev.cmd → goes to server with serverName "dev"
-#   - jobs_prod.sh → goes to server with serverName "prod"
 
-[[serverConfigs]]
+# --------- Client Side Config ---------
+[client]
+stateFile = "./client-state.json"
+
+# Multiple server configurations for distributed processing
+# Server selection uses a case-sensitive substring match: the client looks for each configured
+# `serverName` inside the command filename and routes the file to the matching server.
+# To avoid ambiguous matches, choose distinct serverNames (for example, `jobs_prod.sh` could match
+# `jobs` or `prod` if both are configured).
+# Examples:
+#   - server1_cmds.txt         → serverName "server1"
+#   - batch_dev.cmd            → serverName "batch_dev"
+#   - jobs_prod.sh             → may match "jobs" or "prod" depending on configured serverNames
+
+[[client.remotes]]
 serverName = "server1"  # Human-friendly name (required, must be unique, alphanumeric + hyphens/underscores only)
 sshHostIP = "192.168.1.100"  # IP address or DNS-resolvable hostname (do not use SSH config aliases)
 sshUser = "username1"
@@ -39,7 +43,7 @@ remoteSuccessDir = "/home/username1/ffmpeg_service/work/success"
 copyTo = "/home/username1/ffmpeg_service/work/videos"
 copyFrom = "/home/username1/ffmpeg_service/work/videos_out"
 
-[[serverConfigs]]
+[[client.remotes]]
 serverName = "server2"  # Human-friendly name (required, must be unique, alphanumeric + hyphens/underscores only)
 sshHostIP = "192.168.1.101"  # IP address or DNS-resolvable hostname (do not use SSH config aliases)
 sshUser = "username2"

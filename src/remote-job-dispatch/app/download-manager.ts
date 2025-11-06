@@ -1,4 +1,4 @@
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
 import type { PendingDownload } from "@/remote-job-dispatch/core/client-state-manager";
 import { ClientStateManager } from "@/remote-job-dispatch/core/client-state-manager";
@@ -28,7 +28,7 @@ export class DownloadManager {
   private readonly log = console.log;
   private fileOperations: IFileOperations;
   private stateManager: ClientStateManager;
-  private serverConfigs: ServerConfig[];
+  private serverConfigs: RemoteConfig[];
 
   constructor({
     fileOperations,
@@ -37,7 +37,7 @@ export class DownloadManager {
   }: {
     fileOperations: IFileOperations;
     stateManager: ClientStateManager;
-    serverConfigs: ServerConfig[];
+    serverConfigs: RemoteConfig[];
   }) {
     this.fileOperations = fileOperations;
     this.stateManager = stateManager;
@@ -140,11 +140,11 @@ export class DownloadManager {
     return interrupted.length;
   }
 
-  private findServerByName(serverName: string): ServerConfig | undefined {
+  private findServerByName(serverName: string): RemoteConfig | undefined {
     return this.serverConfigs.find((s) => s.serverName === serverName);
   }
 
-  private async processServerDownloads(server: ServerConfig): Promise<{
+  private async processServerDownloads(server: RemoteConfig): Promise<{
     downloaded: number;
     skipped: number;
     pending: number;
@@ -224,7 +224,7 @@ export class DownloadManager {
   }
 
   private async downloadReadyFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     download: PendingDownload,
     onProgress?: (progress: any) => void
   ): Promise<
@@ -273,7 +273,7 @@ export class DownloadManager {
     return Result.success(undefined);
   }
 
-  private async cleanupInputFilesOnServer(server: ServerConfig): Promise<void> {
+  private async cleanupInputFilesOnServer(server: RemoteConfig): Promise<void> {
     const candidateInputFiles = this.stateManager.getAllUploadedInputFiles(
       server.serverName
     );

@@ -1,4 +1,4 @@
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 
 export class FileIOError extends Error {
   constructor(
@@ -21,7 +21,7 @@ export class FileIOError extends Error {
 export class CommandExecutionError extends Error {
   constructor(
     public readonly command: string,
-    public readonly server: ServerConfig,
+    public readonly server: RemoteConfig,
     public override readonly cause?: Error
   ) {
     super(

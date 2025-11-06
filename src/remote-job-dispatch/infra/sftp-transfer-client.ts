@@ -1,5 +1,5 @@
 import { Result } from "@/common/result";
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import {
   DownloadError,
   UploadError,
@@ -16,7 +16,7 @@ export class SftpTransferClient implements ITransferClient {
   constructor() {}
 
   async upload(
-    server: ServerConfig,
+    server: RemoteConfig,
     localFile: string,
     remoteFile: string,
     onProgress?: ProgressCallback
@@ -57,7 +57,7 @@ export class SftpTransferClient implements ITransferClient {
   }
 
   async download(
-    server: ServerConfig,
+    server: RemoteConfig,
     remoteFile: string,
     localFile: string,
     onProgress?: ProgressCallback
