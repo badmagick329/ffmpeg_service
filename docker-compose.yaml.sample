@@ -1,0 +1,20 @@
+services:
+  ffmpeg:
+    image: ghcr.io/linuxserver/ffmpeg:latest
+    container_name: ffmpeg
+    environment:
+      # if you need to change ID:
+      # - PUID=1000
+      # - PGID=1000
+      - TZ=Etc/UTC # Change to your local timezone if needed, e.g. 'Europe/London'
+    working_dir: /app
+    volumes:
+      - ./work:/app/work
+
+    # Resource caps (optional)
+    # cpus: "4"             # throttle CPU usage
+    # mem_limit: "8g"       # hard memory cap for the container
+    # memswap_limit: "12g"  # total memory (RAM + swap); e.g., mem_limit: 8g and memswap_limit: 12g gives 8g RAM + 4g swap (host must have swap enabled)
+    # pids_limit: 512       # optional: cap threads/processes
+
+    restart: "no"
