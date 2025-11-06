@@ -56,6 +56,9 @@ export class InputFilesWatchService {
 
     const result = this.inputsRepo.add(filepath);
     if (!result) {
+      if (this.inputsRepo.exists(filepath)) {
+        return;
+      }
       this.log.error(`Failed to add file: ${filepath}`, { filepath });
       return;
     }
