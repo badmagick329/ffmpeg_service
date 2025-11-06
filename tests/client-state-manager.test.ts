@@ -4,12 +4,12 @@ import {
   type ClientState,
 } from "@/remote-job-dispatch/core/client-state-manager";
 import type { ClientStateStorage } from "@/remote-job-dispatch/core/client-state-storage";
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import type {
   FileIOError,
   StateFileBackupError,
 } from "@/remote-job-dispatch/core/errors";
-import type { Result } from "@/common/result";
+import { Result } from "@/common/result";
 
 class InMemoryStateStorage implements ClientStateStorage {
   private state: ClientState = {
@@ -18,11 +18,12 @@ class InMemoryStateStorage implements ClientStateStorage {
   };
 
   async saveState(state: ClientState): Promise<Result<void, FileIOError>> {
-    return (this.state = JSON.parse(JSON.stringify(state)));
+    this.state = JSON.parse(JSON.stringify(state));
+    return Result.success(undefined);
   }
 
   async loadState(): Promise<Result<ClientState, StateFileBackupError>> {
-    return JSON.parse(JSON.stringify(this.state));
+    return Result.success(JSON.parse(JSON.stringify(this.state)));
   }
 
   reset(): void {
@@ -32,7 +33,7 @@ class InMemoryStateStorage implements ClientStateStorage {
 
 describe("ClientStateManager", () => {
   let storage: InMemoryStateStorage;
-  let serverConfigs: ServerConfig[];
+  let serverConfigs: RemoteConfig[];
 
   beforeEach(() => {
     storage = new InMemoryStateStorage();

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { CommandDispatcher } from "@/remote-job-dispatch/app/command-dispatcher";
 import type { IFileOperations } from "@/remote-job-dispatch/core/ifile-operations";
-import type { ServerConfig } from "@/infra/config";
+import type { RemoteConfig } from "@/infra/config";
 import {
   ClientStateManager,
   type ClientState,
@@ -26,17 +26,18 @@ class InMemoryStateStorage implements ClientStateStorage {
   };
 
   async saveState(state: ClientState): Promise<Result<void, FileIOError>> {
-    return (this.state = JSON.parse(JSON.stringify(state)));
+    this.state = JSON.parse(JSON.stringify(state));
+    return Result.success(undefined);
   }
 
   async loadState(): Promise<Result<ClientState, StateFileBackupError>> {
-    return JSON.parse(JSON.stringify(this.state));
+    return Result.success(JSON.parse(JSON.stringify(this.state)));
   }
 }
 
 class MockFileOperations implements IFileOperations {
   getRemoteInputFiles(
-    server: ServerConfig
+    server: RemoteConfig
   ): Promise<Result<string[], CommandExecutionError>> {
     throw new Error("Method not implemented.");
   }
@@ -58,7 +59,7 @@ class MockFileOperations implements IFileOperations {
     return true;
   }
   async getFilesReadyForDownload(
-    server: ServerConfig
+    server: RemoteConfig
   ): Promise<Result<string[], CommandExecutionError>> {
     throw new Error("Method not implemented.");
   }
@@ -72,7 +73,7 @@ class MockFileOperations implements IFileOperations {
     return { removals: 0, failures: [] };
   }
   writeFile(
-    server: ServerConfig,
+    server: RemoteConfig,
     remotePath: string,
     content: string
   ): Promise<Result<void, Error>> {
@@ -84,7 +85,7 @@ describe("CommandDispatcher.getNewInputFilesAndExpectedResults", () => {
   let dispatcher: CommandDispatcher;
   let stateManager: ClientStateManager;
   let storage: InMemoryStateStorage;
-  let server: ServerConfig;
+  let server: RemoteConfig;
 
   beforeEach(async () => {
     storage = new InMemoryStateStorage();
