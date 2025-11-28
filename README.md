@@ -4,6 +4,9 @@ Offload FFmpeg encoding jobs to remote servers (homelab, VPS, etc.) with automat
 
 Write FFmpeg commands using your local file paths, and the service handles everything else: uploading inputs to the server, executing the encode, and downloading the finished outputs back to your machine.
 
+<img width="1901" height="758" alt="image" src="https://github.com/user-attachments/assets/9f75c0cc-5ff7-4a2d-8cb6-fb083170b538" />
+
+
 ## Features
 
 - **Automatic file transfer** - Input files are uploaded via SFTP, outputs are downloaded when ready
@@ -254,9 +257,9 @@ If you don't want to install FFmpeg directly on the server, use the included Doc
 
 ## Logs & Monitoring
 
-- **Server logs** — Written to the `logDir` path using Winston with daily rotation
-- **Server TUI** — Displays job counts, recent events, and currently running jobs
-- **Client output** — Progress is printed to stdout during each run
+- **Server logs** - Written to the `logDir` path using Winston with daily rotation
+- **Server TUI** - Displays job counts, recent events, and currently running jobs
+- **Client output** - Progress is printed to stdout during each run
 
 ## Troubleshooting
 
