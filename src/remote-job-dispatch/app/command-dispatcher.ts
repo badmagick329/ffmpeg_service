@@ -100,6 +100,7 @@ export class CommandDispatcher {
         );
         continue;
       }
+      const parsedCommandFile = preprocessResult.unwrap();
 
       const processCommandsResult = await this.processCommands(
         server,
@@ -119,6 +120,16 @@ export class CommandDispatcher {
       summary.serversDispatched.push(result.server);
       summary.totalInputFilesUploaded += result.inputFilesUploaded;
       summary.totalOutputFilesExpected += result.outputFilesExpected;
+
+      parsedCommandFile.applyCommentAll();
+      const commentAllResult = await parsedCommandFile.write();
+      if (commentAllResult.isFailure) {
+        summary.errors.push(
+          `${basename(
+            filePath
+          )}: Failed to write commented commands - ${commentAllResult.unwrapError()}`
+        );
+      }
     }
     summary.text = this.createDispatchSummary(summary);
 
@@ -182,31 +193,24 @@ export class CommandDispatcher {
   private async preprocessCommandFile(
     filePath: string,
     outputFilesInBatch: string[]
-  ): Promise<Result<void, FileIOError>> {
-    const readResult = await Result.fromThrowableAsync(async () =>
-      Bun.file(filePath).text()
+  ): Promise<Result<ParsedCommandFile, FileIOError>> {
+    const parsedCommandFileResult = await ParsedCommandFile.create(
+      filePath,
+      outputFilesInBatch
     );
-
-    if (readResult.isFailure) {
-      return Result.failure(
-        new FileIOError(filePath, "read", readResult.unwrapError())
-      );
+    if (parsedCommandFileResult.isFailure) {
+      return parsedCommandFileResult;
     }
 
-    const content = readResult.unwrap();
-    const parsedFile = new ParsedCommandFile(content, outputFilesInBatch);
+    const parsedCommandFile = parsedCommandFileResult.unwrap();
+    parsedCommandFile.applyUniqueContent();
 
-    const writeResult = await Result.fromThrowableAsync(async () =>
-      Bun.file(filePath).write(parsedFile.uniqueContent)
-    );
-
-    if (writeResult.isFailure) {
-      return Result.failure(
-        new FileIOError(filePath, "write", writeResult.unwrapError())
-      );
+    const preprocessResult = await parsedCommandFile.write();
+    if (preprocessResult.isFailure) {
+      return Result.failure(preprocessResult.unwrapError());
     }
 
-    return Result.success(undefined);
+    return Result.success(parsedCommandFile);
   }
 
   private async getServerOrSkip(
