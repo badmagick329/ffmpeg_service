@@ -54,6 +54,7 @@ export class ParsedCommandFile {
     }
     this.fileContent = this.fileContent
       .split("\n")
+      .filter((l) => !l.trim().startsWith("# "))
       .map((l) => {
         if (l.trim() === "") return l;
         return `${ParsedCommandFile.commentProcessedLine}${l}`;
